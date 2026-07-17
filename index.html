@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>ESPN Draft Assist</title>
+<style>
+  :root {
+    --bg: #0f1116;
+    --panel: #171a21;
+    --panel-2: #1e222b;
+    --line: #2a2f3a;
+    --text: #e7eaf0;
+    --muted: #9aa3b2;
+    --accent: #d63f2a;      /* ESPN red-ish */
+    --accent-2: #2b6cff;
+    --good: #29a36a;
+    --bad: #d64545;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { padding-bottom: env(safe-area-inset-bottom); }
+
+  header.app {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px calc(14px); padding-top: calc(14px + env(safe-area-inset-top));
+    background: var(--panel); border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 10;
+  }
+  header.app .title { font-weight: 700; font-size: 16px; letter-spacing: .2px; }
+  header.app .spacer { flex: 1; }
+
+  .icon-btn {
+    appearance: none; border: 1px solid var(--line); background: var(--panel-2);
+    color: var(--text); border-radius: 10px; padding: 8px 12px; font-size: 14px;
+    font-weight: 600; cursor: pointer;
+  }
+  .icon-btn:active { transform: translateY(1px); }
+
+  main { padding: 16px; max-width: 720px; margin: 0 auto; }
+
+  .status-card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 16px;
+  }
+  .status-card h2 { margin: 0 0 4px; font-size: 15px; }
+  .status-card .sub { color: var(--muted); font-size: 13px; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px;
+    font-weight: 700; border: 1px solid var(--line); }
+  .pill.ok { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
+  .pill.err { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+  .pill.neutral { color: var(--muted); }
+
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin-top: 12px; font-size: 14px; }
+  .kv .k { color: var(--muted); }
+  .kv .v { font-weight: 600; text-align: right; }
+
+  /* Settings drawer */
+  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); opacity: 0; pointer-events: none;
+    transition: opacity .18s ease; z-index: 20; }
+  .scrim.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; z-index: 21; left: 0; right: 0; bottom: 0;
+    background: var(--panel); border-top-left-radius: 18px; border-top-right-radius: 18px;
+    border-top: 1px solid var(--line); transform: translateY(100%);
+    transition: transform .22s cubic-bezier(.2,.7,.2,1);
+    max-height: 92vh; overflow-y: auto; padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+  .drawer.open { transform: translateY(0); }
+  .drawer .grip { width: 40px; height: 4px; background: var(--line); border-radius: 999px; margin: 10px auto 4px; }
+  .drawer .drawer-body { padding: 8px 18px 4px; max-width: 720px; margin: 0 auto; }
+  .drawer h3 { margin: 8px 0 2px; font-size: 17px; }
+  .drawer .hint { color: var(--muted); font-size: 12.5px; margin: 2px 0 12px; }
+
+  label.field { display: block; margin: 12px 0; }
+  label.field .lab { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  label.field .lab small { color: var(--muted); font-weight: 500; }
+  input[type="text"], input[type="password"], textarea {
+    width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 10px; padding: 11px 12px; font-size: 14px; font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 44px; }
+  input:focus, textarea:focus { outline: none; border-color: var(--accent-2); }
+
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin: 14px 0; }
+  .toggle-row input { width: 20px; height: 20px; accent-color: var(--accent-2); }
+  .toggle-row .txt { font-size: 14px; }
+
+  .private-fields.hidden { display: none; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+  .btn {
+    flex: 1; appearance: none; border: none; border-radius: 11px; padding: 13px 14px;
+    font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
+  .btn:disabled { opacity: .55; cursor: default; }
+
+  .test-result { margin-top: 14px; font-size: 13.5px; padding: 12px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--panel-2); display: none; }
+  .test-result.show { display: block; }
+  .test-result.good { border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
+  .test-result.bad { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+  .test-result .big { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--muted);
+    border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -2px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  code.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+    background: var(--panel-2); padding: 1px 5px; border-radius: 5px; }
+</style>
+</head>
+<body>
+  <header class="app">
+    <span class="title">ESPN Draft Assist</span>
+    <span class="spacer"></span>
+    <button class="icon-btn" id="openSettings">⚙︎ Settings</button>
+  </header>
+
+  <main>
+    <div class="status-card" id="statusCard">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <h2 style="flex:1">Connection</h2>
+        <span class="pill neutral" id="connPill">Not connected</span>
+      </div>
+      <div class="sub" id="connSub">Open Settings → ESPN Login to connect a league.</div>
+      <div class="kv" id="connKv" style="display:none">
+        <div class="k">League</div><div class="v" id="kvLeague">—</div>
+        <div class="k">Teams</div><div class="v" id="kvTeams">—</div>
+        <div class="k">Season</div><div class="v" id="kvSeason">—</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Settings drawer -->
+  <div class="scrim" id="scrim"></div>
+  <div class="drawer" id="drawer" role="dialog" aria-label="Settings">
+    <div class="grip"></div>
+    <div class="drawer-body">
+      <h3>ESPN Login</h3>
+      <p class="hint">
+        Private leagues need two cookies from espn.com. On desktop:
+        <b>DevTools → Application → Cookies → espn.com</b>. Copy the values exactly —
+        don't re-encode <code class="mono">espn_s2</code>, and keep the curly braces on
+        <code class="mono">SWID</code>.
+      </p>
+
+      <label class="field">
+        <span class="lab">League URL or ID</span>
+        <input type="text" id="leagueUrl" inputmode="url" autocomplete="off" spellcheck="false"
+          placeholder="https://fantasy.espn.com/football/league?leagueId=123456" />
+      </label>
+
+      <div class="toggle-row">
+        <input type="checkbox" id="publicToggle" />
+        <span class="txt">Public league (no login needed)</span>
+      </div>
+
+      <div class="private-fields" id="privateFields">
+        <label class="field">
+          <span class="lab">SWID <small>(include the { } braces)</small></span>
+          <input type="text" id="swid" autocomplete="off" spellcheck="false"
+            placeholder="{46299BEC-....-....-............}" />
+        </label>
+        <label class="field">
+          <span class="lab">espn_s2 <small>(paste exactly, do not re-encode)</small></span>
+          <textarea id="espnS2" autocomplete="off" spellcheck="false" rows="2"
+            placeholder="AEB...long URL-encoded token..."></textarea>
+        </label>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn ghost" id="saveCreds">Save</button>
+        <button class="btn primary" id="testConn">Test connection</button>
+      </div>
+
+      <div class="test-result" id="testResult"></div>
+
+      <p class="hint" style="margin-top:16px">
+        Cookies are stored only in this browser (localStorage) and sent to ESPN through our
+        own proxy on each request. They are never saved on the server.
+      </p>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---- App state (grows in later chunks) --------------------------------
+  const S = {
+    creds: { leagueId: null, espn_s2: '', swid: '', isPublic: false },
+    season: null,
+    league: null, // { name, size } after a successful test/connect
+  };
+  const LS_KEY = 'espnDraftAssist.creds.v1';
+
+  // ---- ESPN provider module ---------------------------------------------
+  // Isolated seam: everything that talks to ESPN goes through here, via the
+  // same-origin /api/espn proxy (blueprint §2 provider section, §3.5 contract).
+  const ESPN = {
+    async call(path, { withAuth = true } = {}) {
+      const payload = { path };
+      if (withAuth && !S.creds.isPublic) {
+        if (S.creds.espn_s2) payload.espn_s2 = S.creds.espn_s2;
+        if (S.creds.swid) payload.swid = S.creds.swid;
+      }
+      const res = await fetch('/api/espn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      let data = null;
+      const raw = await res.text();
+      try { data = raw ? JSON.parse(raw) : null; } catch { data = null; }
+      return { status: res.status, data, raw };
+    },
+
+    // Season derived at runtime from currentSeasonId so the app rolls over
+    // each year with no code change (§0).
+    async currentSeason() {
+      const { status, data } = await this.call('', { withAuth: false });
+      if (status >= 200 && status < 300 && data && data.currentSeasonId) {
+        return data.currentSeasonId;
+      }
+      throw new Error('Could not read current season (status ' + status + ')');
+    },
+
+    // mSettings connect probe for a league. Returns { name, size }.
+    async leagueSettings(season, leagueId) {
+      const path = `/seasons/${season}/segments/0/leagues/${leagueId}?view=mSettings`;
+      const { status, data } = await this.call(path);
+      if (status === 401 || status === 403 || (data && data.error === 'auth')) {
+        const e = new Error('auth'); e.code = 'auth'; throw e;
+      }
+      // A 200 that is missing settings is also treated as an auth/shape failure
+      // for private leagues (C2: "a 200 missing teams -> prompt re-paste").
+      if (status < 200 || status >= 300 || !data || !data.settings) {
+        const e = new Error('shape'); e.code = 'shape'; e.status = status; throw e;
+      }
+      const st = data.settings;
+      return { name: st.name || '(unnamed league)', size: st.size ?? null };
+    },
+  };
+
+  // ---- Credential persistence -------------------------------------------
+  function loadCreds() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+      if (saved) Object.assign(S.creds, saved);
+    } catch { /* ignore corrupt */ }
+  }
+  function saveCreds() {
+    localStorage.setItem(LS_KEY, JSON.stringify(S.creds));
+  }
+
+  function parseLeagueId(input) {
+    if (!input) return null;
+    const s = String(input).trim();
+    const m = s.match(/leagueId=(\d+)/i) || s.match(/\/(\d{4,})(?:[/?#]|$)/) || s.match(/^(\d{2,})$/);
+    return m ? m[1] : null;
+  }
+
+  // ---- DOM ---------------------------------------------------------------
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    openSettings: $('openSettings'), scrim: $('scrim'), drawer: $('drawer'),
+    leagueUrl: $('leagueUrl'), publicToggle: $('publicToggle'), privateFields: $('privateFields'),
+    swid: $('swid'), espnS2: $('espnS2'),
+    saveCreds: $('saveCreds'), testConn: $('testConn'), testResult: $('testResult'),
+    connPill: $('connPill'), connSub: $('connSub'), connKv: $('connKv'),
+    kvLeague: $('kvLeague'), kvTeams: $('kvTeams'), kvSeason: $('kvSeason'),
+  };
+
+  function openDrawer() { els.scrim.classList.add('open'); els.drawer.classList.add('open'); }
+  function closeDrawer() { els.scrim.classList.remove('open'); els.drawer.classList.remove('open'); }
+
+  function syncFormFromState() {
+    if (S.creds.leagueId) els.leagueUrl.value = S.creds.leagueId;
+    els.publicToggle.checked = !!S.creds.isPublic;
+    els.swid.value = S.creds.swid || '';
+    els.espnS2.value = S.creds.espn_s2 || '';
+    els.privateFields.classList.toggle('hidden', els.publicToggle.checked);
+  }
+
+  function readFormIntoState() {
+    S.creds.leagueId = parseLeagueId(els.leagueUrl.value);
+    S.creds.isPublic = els.publicToggle.checked;
+    S.creds.swid = els.swid.value.trim();
+    S.creds.espn_s2 = els.espnS2.value.trim();
+  }
+
+  function showResult(kind, html) {
+    els.testResult.className = 'test-result show ' + (kind || '');
+    els.testResult.innerHTML = html;
+  }
+
+  function setConnected(league, season) {
+    S.league = league; S.season = season;
+    els.connPill.className = 'pill ok';
+    els.connPill.textContent = 'Connected';
+    els.connSub.textContent = 'League settings loaded.';
+    els.connKv.style.display = 'grid';
+    els.kvLeague.textContent = league.name;
+    els.kvTeams.textContent = league.size != null ? String(league.size) : '—';
+    els.kvSeason.textContent = season != null ? String(season) : '—';
+  }
+
+  // ---- Test connection (Chunk 0 exit test) ------------------------------
+  async function testConnection() {
+    readFormIntoState();
+    if (!S.creds.leagueId) {
+      showResult('bad', '<div class="big">Missing league</div>Paste a league URL or ID first.');
+      return;
+    }
+    if (!S.creds.isPublic && (!S.creds.swid || !S.creds.espn_s2)) {
+      showResult('bad', '<div class="big">Missing credentials</div>' +
+        'Enter both SWID and espn_s2, or toggle “Public league”.');
+      return;
+    }
+    saveCreds();
+
+    els.testConn.disabled = true;
+    showResult('', '<span class="spin"></span> Contacting ESPN…');
+    try {
+      const season = await ESPN.currentSeason();
+      const league = await ESPN.leagueSettings(season, S.creds.leagueId);
+      setConnected(league, season);
+      showResult('good',
+        `<div class="big">✓ Connected</div>` +
+        `<div><b>${escapeHtml(league.name)}</b> — ` +
+        `${league.size != null ? league.size + ' teams' : 'team count unknown'} · ${season}</div>`);
+    } catch (err) {
+      if (err.code === 'auth') {
+        showResult('bad',
+          '<div class="big">Authentication failed</div>' +
+          'Your espn_s2 / SWID may have expired or been mistyped. Re-copy both from ' +
+          'espn.com and paste them again.');
+      } else if (err.code === 'shape') {
+        showResult('bad',
+          '<div class="big">No league data returned</div>' +
+          'Check the league ID' +
+          (S.creds.isPublic ? ' — if this is a private league, uncheck “Public”.' : '.') +
+          (err.status ? ' (status ' + err.status + ')' : ''));
+      } else {
+        showResult('bad', '<div class="big">Connection error</div>' + escapeHtml(err.message || String(err)));
+      }
+    } finally {
+      els.testConn.disabled = false;
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // ---- Wire up -----------------------------------------------------------
+  els.openSettings.addEventListener('click', openDrawer);
+  els.scrim.addEventListener('click', closeDrawer);
+  els.publicToggle.addEventListener('change', () => {
+    els.privateFields.classList.toggle('hidden', els.publicToggle.checked);
+  });
+  els.saveCreds.addEventListener('click', () => {
+    readFormIntoState(); saveCreds();
+    showResult('good', '<div class="big">Saved</div>Credentials stored in this browser.');
+  });
+  els.testConn.addEventListener('click', testConnection);
+
+  // ---- Boot --------------------------------------------------------------
+  loadCreds();
+  syncFormFromState();
+})();
+</script>
+</body>
+</html>
