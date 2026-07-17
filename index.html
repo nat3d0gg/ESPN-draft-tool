@@ -6,373 +6,1253 @@
 <title>ESPN Draft Assist</title>
 <style>
   :root {
-    --bg: #0f1116;
-    --panel: #171a21;
-    --panel-2: #1e222b;
-    --line: #2a2f3a;
-    --text: #e7eaf0;
-    --muted: #9aa3b2;
-    --accent: #d63f2a;      /* ESPN red-ish */
-    --accent-2: #2b6cff;
-    --good: #29a36a;
-    --bad: #d64545;
-    --radius: 12px;
+    --bg:#0f1116; --panel:#171a21; --panel-2:#1e222b; --panel-3:#232733;
+    --line:#2a2f3a; --text:#e7eaf0; --muted:#9aa3b2; --dim:#6b7382;
+    --accent:#d63f2a; --accent-2:#2b6cff; --good:#29a36a; --bad:#d64545; --warn:#d8a33a;
+    --qb:#e0517a; --rb:#37b978; --wr:#3d8bff; --te:#e0912b; --k:#9a7bd0; --dst:#8a94a6;
+    --radius:12px;
   }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
-    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  body { padding-bottom: env(safe-area-inset-bottom); }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  body{padding-bottom:calc(64px + env(safe-area-inset-bottom));}
+  h1,h2,h3{margin:0;}
+  button{font-family:inherit;}
 
-  header.app {
-    display: flex; align-items: center; gap: 10px;
-    padding: 14px 16px calc(14px); padding-top: calc(14px + env(safe-area-inset-top));
-    background: var(--panel); border-bottom: 1px solid var(--line);
-    position: sticky; top: 0; z-index: 10;
-  }
-  header.app .title { font-weight: 700; font-size: 16px; letter-spacing: .2px; }
-  header.app .spacer { flex: 1; }
+  header.app{display:flex;align-items:center;gap:10px;padding:12px 14px;
+    padding-top:calc(12px + env(safe-area-inset-top));background:var(--panel);
+    border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;}
+  header.app .title{font-weight:800;font-size:15px;letter-spacing:.2px;}
+  header.app .who{font-size:11.5px;color:var(--muted);}
+  header.app .spacer{flex:1;}
+  .status-dot{width:9px;height:9px;border-radius:50%;background:var(--dim);flex:none;}
+  .status-dot.live{background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 25%,transparent);}
+  .status-dot.pre{background:var(--warn);}
+  .status-dot.done{background:var(--accent-2);}
+  .icon-btn{appearance:none;border:1px solid var(--line);background:var(--panel-2);color:var(--text);
+    border-radius:10px;padding:7px 11px;font-size:13px;font-weight:700;cursor:pointer;}
+  .icon-btn:active{transform:translateY(1px);}
 
-  .icon-btn {
-    appearance: none; border: 1px solid var(--line); background: var(--panel-2);
-    color: var(--text); border-radius: 10px; padding: 8px 12px; font-size: 14px;
-    font-weight: 600; cursor: pointer;
-  }
-  .icon-btn:active { transform: translateY(1px); }
+  .banner{display:none;padding:9px 14px;font-size:13px;font-weight:600;text-align:center;}
+  .banner.show{display:block;}
+  .banner.warn{background:color-mix(in srgb,var(--warn) 22%,var(--panel));color:#f0d18a;border-bottom:1px solid var(--line);}
+  .banner.bad{background:color-mix(in srgb,var(--bad) 22%,var(--panel));color:#f0a8a8;border-bottom:1px solid var(--line);}
+  .banner.info{background:color-mix(in srgb,var(--accent-2) 20%,var(--panel));color:#bcd0ff;border-bottom:1px solid var(--line);}
+  .banner button{margin-left:10px;border:1px solid currentColor;background:transparent;color:inherit;
+    border-radius:8px;padding:3px 9px;font-size:12px;font-weight:700;cursor:pointer;}
 
-  main { padding: 16px; max-width: 720px; margin: 0 auto; }
+  main{max-width:820px;margin:0 auto;padding:12px 12px 20px;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
 
-  .status-card {
-    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-    padding: 16px; margin-bottom: 16px;
-  }
-  .status-card h2 { margin: 0 0 4px; font-size: 15px; }
-  .status-card .sub { color: var(--muted); font-size: 13px; }
-  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px;
-    font-weight: 700; border: 1px solid var(--line); }
-  .pill.ok { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
-  .pill.err { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
-  .pill.neutral { color: var(--muted); }
+  /* bottom tab bar */
+  nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;display:flex;background:var(--panel);
+    border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);}
+  nav.tabs button{flex:1;appearance:none;border:none;background:transparent;color:var(--muted);
+    padding:9px 4px 8px;font-size:11px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;
+    align-items:center;gap:3px;}
+  nav.tabs button .ic{font-size:18px;line-height:1;}
+  nav.tabs button.active{color:var(--text);}
+  nav.tabs button.active .ic{filter:drop-shadow(0 0 6px color-mix(in srgb,var(--accent) 60%,transparent));}
 
-  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin-top: 12px; font-size: 14px; }
-  .kv .k { color: var(--muted); }
-  .kv .v { font-weight: 600; text-align: right; }
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+  .card h2{font-size:14px;margin-bottom:8px;}
+  .muted{color:var(--muted);} .dim{color:var(--dim);} .small{font-size:12.5px;}
+  .row{display:flex;align-items:center;gap:8px;}
+  .grow{flex:1;}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:800;border:1px solid var(--line);}
+  .pill.ok{color:var(--good);} .pill.err{color:var(--bad);} .pill.neutral{color:var(--muted);}
 
-  /* Settings drawer */
-  .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.55); opacity: 0; pointer-events: none;
-    transition: opacity .18s ease; z-index: 20; }
-  .scrim.open { opacity: 1; pointer-events: auto; }
-  .drawer {
-    position: fixed; z-index: 21; left: 0; right: 0; bottom: 0;
-    background: var(--panel); border-top-left-radius: 18px; border-top-right-radius: 18px;
-    border-top: 1px solid var(--line); transform: translateY(100%);
-    transition: transform .22s cubic-bezier(.2,.7,.2,1);
-    max-height: 92vh; overflow-y: auto; padding-bottom: calc(20px + env(safe-area-inset-bottom));
-  }
-  .drawer.open { transform: translateY(0); }
-  .drawer .grip { width: 40px; height: 4px; background: var(--line); border-radius: 999px; margin: 10px auto 4px; }
-  .drawer .drawer-body { padding: 8px 18px 4px; max-width: 720px; margin: 0 auto; }
-  .drawer h3 { margin: 8px 0 2px; font-size: 17px; }
-  .drawer .hint { color: var(--muted); font-size: 12.5px; margin: 2px 0 12px; }
+  .pos{font-weight:800;font-size:11px;padding:1px 6px;border-radius:6px;color:#0c0f14;}
+  .pos.QB{background:var(--qb);} .pos.RB{background:var(--rb);} .pos.WR{background:var(--wr);}
+  .pos.TE{background:var(--te);} .pos.K{background:var(--k);} .pos.DST{background:var(--dst);}
+  .pos.FLEX,.pos.OP{background:#c9cdd6;}
 
-  label.field { display: block; margin: 12px 0; }
-  label.field .lab { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-  label.field .lab small { color: var(--muted); font-weight: 500; }
-  input[type="text"], input[type="password"], textarea {
-    width: 100%; background: var(--panel-2); color: var(--text); border: 1px solid var(--line);
-    border-radius: 10px; padding: 11px 12px; font-size: 14px; font-family: inherit;
-  }
-  textarea { resize: vertical; min-height: 44px; }
-  input:focus, textarea:focus { outline: none; border-color: var(--accent-2); }
+  /* board */
+  .toolbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+  .chip{appearance:none;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);
+    border-radius:999px;padding:6px 11px;font-size:12px;font-weight:700;cursor:pointer;}
+  .chip.on{color:var(--text);border-color:var(--accent-2);background:color-mix(in srgb,var(--accent-2) 16%,var(--panel-2));}
+  input[type="search"],input[type="text"],input[type="password"],input[type="number"],textarea,select{
+    width:100%;background:var(--panel-2);color:var(--text);border:1px solid var(--line);border-radius:10px;
+    padding:10px 11px;font-size:14px;font-family:inherit;}
+  textarea{resize:vertical;min-height:40px;}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent-2);}
 
-  .toggle-row { display: flex; align-items: center; gap: 10px; margin: 14px 0; }
-  .toggle-row input { width: 20px; height: 20px; accent-color: var(--accent-2); }
-  .toggle-row .txt { font-size: 14px; }
+  .board-list{display:flex;flex-direction:column;gap:0;}
+  .prow{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:9px 8px;
+    border-bottom:1px solid var(--line);}
+  .prow:last-child{border-bottom:none;}
+  .prow.drafted{opacity:.4;}
+  .prow.drafted .pname{text-decoration:line-through;}
+  .prow .rank{font-weight:800;font-size:15px;text-align:center;color:var(--muted);}
+  .prow .pname{font-weight:700;font-size:14.5px;}
+  .prow .meta{font-size:11.5px;color:var(--muted);display:flex;gap:6px;align-items:center;margin-top:2px;flex-wrap:wrap;}
+  .prow .right{text-align:right;font-size:11.5px;color:var(--muted);white-space:nowrap;display:flex;flex-direction:column;gap:3px;align-items:flex-end;}
+  .delta.steal{color:var(--good);font-weight:800;} .delta.reach{color:var(--bad);font-weight:800;}
+  .tier-sep{padding:5px 8px;font-size:11px;font-weight:800;letter-spacing:.4px;color:var(--dim);
+    background:var(--panel-2);border-bottom:1px solid var(--line);text-transform:uppercase;}
+  .mini-btn{appearance:none;border:1px solid var(--line);background:var(--panel-3);color:var(--text);
+    border-radius:8px;padding:5px 9px;font-size:12px;font-weight:700;cursor:pointer;}
 
-  .private-fields.hidden { display: none; }
+  /* needs */
+  .slotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;}
+  .slotcell{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;}
+  .slotcell .n{font-size:12px;color:var(--muted);} .slotcell .b{font-weight:800;font-size:16px;}
+  .slotcell.filled{opacity:.55;}
+  .slotcell.need{border-color:color-mix(in srgb,var(--warn) 45%,var(--line));}
 
-  .btn-row { display: flex; gap: 10px; margin-top: 16px; }
-  .btn {
-    flex: 1; appearance: none; border: none; border-radius: 11px; padding: 13px 14px;
-    font-size: 15px; font-weight: 700; cursor: pointer;
-  }
-  .btn.primary { background: var(--accent); color: #fff; }
-  .btn.ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
-  .btn:disabled { opacity: .55; cursor: default; }
+  /* rec card */
+  .rec{background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 16%,var(--panel)),var(--panel));
+    border:1px solid color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:14px;padding:14px;margin-bottom:12px;}
+  .rec .lead{font-size:11px;font-weight:800;letter-spacing:.5px;color:#f2b3a6;text-transform:uppercase;}
+  .rec .pick{font-size:20px;font-weight:800;margin:2px 0 4px;}
+  .rec .why{font-size:12.5px;color:var(--muted);}
 
-  .test-result { margin-top: 14px; font-size: 13.5px; padding: 12px; border-radius: 10px;
-    border: 1px solid var(--line); background: var(--panel-2); display: none; }
-  .test-result.show { display: block; }
-  .test-result.good { border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
-  .test-result.bad { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
-  .test-result .big { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
-  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--muted);
-    border-top-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -2px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  /* sources */
+  .src{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--panel-2);}
+  .src .top{display:flex;align-items:center;gap:8px;}
+  .src .nm{font-weight:700;flex:1;} .src .cnt{font-size:11px;color:var(--muted);}
+  .src input[type="range"]{width:100%;}
+  .wt{font-variant-numeric:tabular-nums;font-weight:800;width:34px;text-align:right;}
 
-  code.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
-    background: var(--panel-2); padding: 1px 5px; border-radius: 5px; }
+  /* drawer / modal */
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .18s;z-index:20;}
+  .scrim.open{opacity:1;pointer-events:auto;}
+  .drawer{position:fixed;z-index:21;left:0;right:0;bottom:0;background:var(--panel);
+    border-top-left-radius:18px;border-top-right-radius:18px;border-top:1px solid var(--line);
+    transform:translateY(100%);transition:transform .22s cubic-bezier(.2,.7,.2,1);max-height:92vh;overflow-y:auto;
+    padding-bottom:calc(20px + env(safe-area-inset-bottom));}
+  .drawer.open{transform:translateY(0);}
+  .drawer .grip{width:40px;height:4px;background:var(--line);border-radius:999px;margin:10px auto 2px;}
+  .drawer .body{padding:8px 18px 4px;max-width:720px;margin:0 auto;}
+  label.field{display:block;margin:12px 0;}
+  label.field .lab{display:block;font-size:13px;font-weight:700;margin-bottom:6px;}
+  label.field .lab small{color:var(--muted);font-weight:500;}
+  .hint{color:var(--muted);font-size:12.5px;margin:2px 0 12px;}
+  code.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--panel-2);padding:1px 5px;border-radius:5px;}
+  .btn{appearance:none;border:none;border-radius:11px;padding:12px 14px;font-size:15px;font-weight:800;cursor:pointer;}
+  .btn.primary{background:var(--accent);color:#fff;} .btn.ghost{background:var(--panel-2);color:var(--text);border:1px solid var(--line);}
+  .btn.block{width:100%;} .btn:disabled{opacity:.55;cursor:default;}
+  .btn-row{display:flex;gap:10px;margin-top:14px;}
+  .toggle-row{display:flex;align-items:center;gap:10px;margin:12px 0;}
+  .toggle-row input{width:20px;height:20px;accent-color:var(--accent-2);}
+  .result{margin-top:12px;font-size:13px;padding:11px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);display:none;}
+  .result.show{display:block;} .result.good{border-color:color-mix(in srgb,var(--good) 45%,var(--line));}
+  .result.bad{border-color:color-mix(in srgb,var(--bad) 45%,var(--line));}
+  .result .big{font-size:15px;font-weight:800;margin-bottom:2px;}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--muted);border-top-color:transparent;
+    border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* typeahead */
+  .ta-wrap{position:relative;}
+  .ta-list{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--panel-3);border:1px solid var(--line);
+    border-radius:10px;max-height:260px;overflow-y:auto;z-index:5;display:none;}
+  .ta-list.show{display:block;}
+  .ta-item{padding:9px 11px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:8px;align-items:center;}
+  .ta-item:last-child{border-bottom:none;} .ta-item:active{background:var(--panel-2);}
+
+  .empty{padding:26px 14px;text-align:center;color:var(--muted);}
+  .empty .big{font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px;}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px;}
+  .kv .k{color:var(--muted);} .kv .v{font-weight:700;text-align:right;}
+  .tag{font-size:10px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--panel-3);color:var(--muted);border:1px solid var(--line);}
+  .tag.api{color:#bcd0ff;} .tag.manual{color:#f0d18a;} .tag.keeper{color:#c8f0d8;} .tag.auto{color:#e0b0c0;}
+  hr.sep{border:none;border-top:1px solid var(--line);margin:14px 0;}
 </style>
 </head>
 <body>
   <header class="app">
-    <span class="title">ESPN Draft Assist</span>
+    <span class="status-dot" id="statusDot"></span>
+    <div>
+      <div class="title">ESPN Draft Assist</div>
+      <div class="who" id="whoLine">Not connected</div>
+    </div>
     <span class="spacer"></span>
-    <button class="icon-btn" id="openSettings">⚙︎ Settings</button>
+    <button class="icon-btn" id="openSettings">⚙︎</button>
   </header>
 
+  <div class="banner" id="banner"></div>
+
   <main>
-    <div class="status-card" id="statusCard">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <h2 style="flex:1">Connection</h2>
-        <span class="pill neutral" id="connPill">Not connected</span>
+    <!-- BOARD -->
+    <section class="tab-panel active" id="tab-board" data-tab="board">
+      <div class="rec" id="recCard" style="display:none"></div>
+      <div class="toolbar" id="posFilters"></div>
+      <div class="row" style="margin-bottom:10px;">
+        <input type="search" id="boardSearch" placeholder="Search players…" autocomplete="off" />
+        <button class="chip" id="hideDrafted">Hide drafted</button>
       </div>
-      <div class="sub" id="connSub">Open Settings → ESPN Login to connect a league.</div>
-      <div class="kv" id="connKv" style="display:none">
-        <div class="k">League</div><div class="v" id="kvLeague">—</div>
-        <div class="k">Teams</div><div class="v" id="kvTeams">—</div>
-        <div class="k">Season</div><div class="v" id="kvSeason">—</div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="board-list" id="boardList">
+          <div class="empty"><div class="big">No board yet</div>
+            Connect a league (⚙︎) and load players & a ranking source.</div>
+        </div>
       </div>
-    </div>
+    </section>
+
+    <!-- NEEDS -->
+    <section class="tab-panel" id="tab-needs" data-tab="needs">
+      <div class="card">
+        <h2>Roster needs — <span id="needsTeamName" class="muted">your team</span></h2>
+        <div class="slotgrid" id="needsGrid"><div class="muted small">Connect a league to see starting slots.</div></div>
+      </div>
+      <div class="card">
+        <h2>Your roster</h2>
+        <div id="myRoster" class="small muted">No picks yet.</div>
+      </div>
+    </section>
+
+    <!-- DRAFT -->
+    <section class="tab-panel" id="tab-draft" data-tab="draft">
+      <div class="card" id="draftStatusCard">
+        <div class="row"><h2 class="grow">Draft</h2><span class="pill neutral" id="draftPill">—</span></div>
+        <div class="kv" style="margin-top:8px;">
+          <div class="k">On the clock</div><div class="v" id="onClock">—</div>
+          <div class="k">Your next pick</div><div class="v" id="nextPick">—</div>
+          <div class="k">Picks made</div><div class="v" id="pickCount">—</div>
+          <div class="k">Last sync</div><div class="v" id="lastSync">—</div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Manual pick entry</h2>
+        <div class="hint">Type a player, tap to mark drafted at the next open pick. Always available — works even if the ESPN API doesn't push picks live.</div>
+        <div class="ta-wrap">
+          <input type="text" id="manualInput" placeholder="Add a drafted player…" autocomplete="off" />
+          <div class="ta-list" id="manualList"></div>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="mini-btn" id="undoPick">↶ Undo last</button>
+          <span class="grow"></span>
+          <span class="small muted" id="manualHint"></span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Recent picks</h2>
+        <div id="recentPicks" class="small muted">No picks yet.</div>
+      </div>
+    </section>
+
+    <!-- SOURCES -->
+    <section class="tab-panel" id="tab-sources" data-tab="sources">
+      <div class="card">
+        <h2>Ranking sources & blend</h2>
+        <div class="hint">Blended value = weighted average of each enabled source's rank. Drag weights to taste.</div>
+        <div id="sourceList"><div class="muted small">No sources yet.</div></div>
+      </div>
+      <div class="card">
+        <h2>Add sources</h2>
+        <div class="btn-row" style="flex-wrap:wrap;">
+          <button class="btn ghost" id="loadEspnRanks">Load ESPN ranks + ADP</button>
+          <button class="btn ghost" id="uploadFpBtn">Upload FantasyPros CSV</button>
+        </div>
+        <input type="file" id="fpFile" accept=".csv,text/csv" style="display:none" />
+        <div class="result" id="sourceResult"></div>
+      </div>
+      <div class="card" id="resolverCard" style="display:none">
+        <h2>Unmatched rows <span class="pill err" id="resolverCount">0</span></h2>
+        <div class="hint">These source rows didn't match an ESPN player. Link them manually — saved to your alias map.</div>
+        <div id="resolverList"></div>
+      </div>
+      <div class="card">
+        <h2>Sync across devices</h2>
+        <div class="hint">Save your custom rankings, weights, source names and aliases to a short code, then load it on another device.</div>
+        <div class="btn-row">
+          <button class="btn ghost" id="syncSave">Save → code</button>
+          <div class="ta-wrap grow" style="display:flex;gap:8px;">
+            <input type="text" id="syncCode" placeholder="CODE" style="text-transform:uppercase;" maxlength="10" />
+            <button class="btn ghost" id="syncLoad" style="flex:none;">Load</button>
+          </div>
+        </div>
+        <div class="result" id="syncResult"></div>
+      </div>
+    </section>
   </main>
+
+  <nav class="tabs" id="tabBar">
+    <button data-go="board" class="active"><span class="ic">📋</span>Board</button>
+    <button data-go="needs"><span class="ic">🎯</span>Needs</button>
+    <button data-go="draft"><span class="ic">⏱️</span>Draft</button>
+    <button data-go="sources"><span class="ic">🎚️</span>Sources</button>
+  </nav>
 
   <!-- Settings drawer -->
   <div class="scrim" id="scrim"></div>
   <div class="drawer" id="drawer" role="dialog" aria-label="Settings">
     <div class="grip"></div>
-    <div class="drawer-body">
+    <div class="body">
       <h3>ESPN Login</h3>
-      <p class="hint">
-        Private leagues need two cookies from espn.com. On desktop:
-        <b>DevTools → Application → Cookies → espn.com</b>. Copy the values exactly —
-        don't re-encode <code class="mono">espn_s2</code>, and keep the curly braces on
-        <code class="mono">SWID</code>.
-      </p>
+      <p class="hint">Private leagues need two cookies from espn.com: <b>DevTools → Application → Cookies → espn.com</b>.
+        Paste <code class="mono">espn_s2</code> exactly (don't re-encode) and keep the <code class="mono">{ }</code> on <code class="mono">SWID</code>.</p>
 
-      <label class="field">
-        <span class="lab">League URL or ID</span>
+      <label class="field"><span class="lab">League URL or ID</span>
         <input type="text" id="leagueUrl" inputmode="url" autocomplete="off" spellcheck="false"
-          placeholder="https://fantasy.espn.com/football/league?leagueId=123456" />
-      </label>
+          placeholder="https://fantasy.espn.com/football/league?leagueId=123456" /></label>
 
-      <div class="toggle-row">
-        <input type="checkbox" id="publicToggle" />
-        <span class="txt">Public league (no login needed)</span>
-      </div>
+      <div class="toggle-row"><input type="checkbox" id="publicToggle" />
+        <span>Public league (no login needed)</span></div>
 
       <div class="private-fields" id="privateFields">
-        <label class="field">
-          <span class="lab">SWID <small>(include the { } braces)</small></span>
-          <input type="text" id="swid" autocomplete="off" spellcheck="false"
-            placeholder="{46299BEC-....-....-............}" />
-        </label>
-        <label class="field">
-          <span class="lab">espn_s2 <small>(paste exactly, do not re-encode)</small></span>
-          <textarea id="espnS2" autocomplete="off" spellcheck="false" rows="2"
-            placeholder="AEB...long URL-encoded token..."></textarea>
-        </label>
+        <label class="field"><span class="lab">SWID <small>(include the { } braces)</small></span>
+          <input type="text" id="swid" autocomplete="off" spellcheck="false" placeholder="{46299BEC-....}" /></label>
+        <label class="field"><span class="lab">espn_s2 <small>(paste exactly)</small></span>
+          <textarea id="espnS2" autocomplete="off" spellcheck="false" rows="2" placeholder="AEB...token..."></textarea></label>
       </div>
 
       <div class="btn-row">
         <button class="btn ghost" id="saveCreds">Save</button>
-        <button class="btn primary" id="testConn">Test connection</button>
+        <button class="btn primary" id="testConn">Connect</button>
       </div>
+      <div class="result" id="testResult"></div>
 
-      <div class="test-result" id="testResult"></div>
+      <hr class="sep" />
+      <label class="field"><span class="lab">Your team <small>(auto-detected from SWID; override if co-managed)</small></span>
+        <select id="teamPicker"><option value="">Auto-detect</option></select></label>
 
-      <p class="hint" style="margin-top:16px">
-        Cookies are stored only in this browser (localStorage) and sent to ESPN through our
-        own proxy on each request. They are never saved on the server.
-      </p>
+      <p class="hint">Cookies stay in this browser (localStorage) and are sent to ESPN only through our own proxy. Never stored on the server, never synced.</p>
+      <div class="btn-row"><button class="btn ghost block" id="closeDrawer">Done</button></div>
     </div>
   </div>
 
 <script>
 (() => {
   'use strict';
+  const $ = (id) => document.getElementById(id);
+  const el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; };
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  // ---- App state (grows in later chunks) --------------------------------
+  // ===================================================================
+  // Decode maps (blueprint §3.3) — hardcoded coded enums (C6).
+  // ===================================================================
+  const POS_MAP = {1:'QB',2:'RB',3:'WR',4:'TE',5:'K',16:'DST',7:'P',9:'DL',10:'DE',11:'LB',12:'DB',13:'S'};
+  const OFFENSE_K_DST = new Set([1,2,3,4,5,16]);
+  const IDP_POS = new Set([9,10,11,12,13]);
+  const PRO_TEAM = {0:'FA',1:'ATL',2:'BUF',3:'CHI',4:'CIN',5:'CLE',6:'DAL',7:'DEN',8:'DET',9:'GB',10:'TEN',
+    11:'IND',12:'KC',13:'LV',14:'LAR',15:'MIA',16:'MIN',17:'NE',18:'NO',19:'NYG',20:'NYJ',21:'PHI',22:'ARI',
+    23:'PIT',24:'LAC',25:'SF',26:'SEA',27:'TB',28:'WSH',29:'CAR',30:'JAX',33:'BAL',34:'HOU'};
+  // lineup slot id -> label (§3.3). Starting slots exclude bench/IR/ER (20/21/24).
+  const SLOT_LABEL = {0:'QB',2:'RB',3:'RB/WR',4:'WR',5:'WR/TE',6:'TE',7:'OP',16:'DST',17:'K',23:'FLEX',
+    1:'TQB',8:'DT',9:'DE',10:'LB',11:'DL',12:'CB',13:'S',14:'DB',15:'DP',18:'P',19:'HC',24:'ER'};
+  const NON_STARTING_SLOTS = new Set([20,21,24]);
+  // team full-name / city -> abbrev, for D/ST source matching (never person-name norm).
+  const TEAM_NAMES = {arizona:'ARI',cardinals:'ARI',atlanta:'ATL',falcons:'ATL',baltimore:'BAL',ravens:'BAL',
+    buffalo:'BUF',bills:'BUF',carolina:'CAR',panthers:'CAR',chicago:'CHI',bears:'CHI',cincinnati:'CIN',bengals:'CIN',
+    cleveland:'CLE',browns:'CLE',dallas:'DAL',cowboys:'DAL',denver:'DEN',broncos:'DEN',detroit:'DET',lions:'DET',
+    green:'GB',packers:'GB',greenbay:'GB',houston:'HOU',texans:'HOU',indianapolis:'IND',colts:'IND',
+    jacksonville:'JAX',jaguars:'JAX',kansas:'KC',chiefs:'KC',kansascity:'KC',lasvegas:'LV',raiders:'LV',
+    losangeleschargers:'LAC',chargers:'LAC',losangelesrams:'LAR',rams:'LAR',miami:'MIA',dolphins:'MIA',
+    minnesota:'MIN',vikings:'MIN',newengland:'NE',patriots:'NE',neworleans:'NO',saints:'NO',
+    newyorkgiants:'NYG',giants:'NYG',newyorkjets:'NYJ',jets:'NYJ',philadelphia:'PHI',eagles:'PHI',
+    pittsburgh:'PIT',steelers:'PIT',sanfrancisco:'SF',niners:'SF','49ers':'SF',seattle:'SEA',seahawks:'SEA',
+    tampa:'TB',buccaneers:'TB',bucs:'TB',tampabay:'TB',tennessee:'TEN',titans:'TEN',washington:'WSH',commanders:'WSH'};
+
+  // Name normalizer + alias map (reused from dedup project): strip suffixes, punctuation.
+  const BASE_ALIASES = { hollywoodbrown:'marquisebrown', gabedavis:'gabrieldavis', dkmetcalf:'dkmetcalf',
+    cameronskattebo:'camskattebo', michaelpittman:'michaelpittmanjr', kennethwalker:'kennethwalkeriii' };
+  function norm(name){
+    return String(name||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .replace(/\b(jr|sr|ii|iii|iv|v)\b/g,'').replace(/[^a-z0-9]/g,'');
+  }
+
+  // ===================================================================
+  // App state
+  // ===================================================================
   const S = {
-    creds: { leagueId: null, espn_s2: '', swid: '', isPublic: false },
-    season: null,
-    league: null, // { name, size } after a successful test/connect
+    creds:{leagueId:null, espn_s2:'', swid:'', isPublic:false},
+    season:null,
+    league:null,             // {name,size,scoringType,draftType,pickOrder,teams,members,myTeamId,slotCounts,startingSlots,usesIDP}
+    players:new Map(),       // espnId -> canonical player
+    nameIndex:new Map(),     // nameKey -> [espnId,...]
+    sources:[],              // {id,name,weight,enabled,byId:Map<espnId,{rank,value,adp,proj}>,isAdp,isEspn}
+    blend:new Map(),         // espnId -> {rank, value}
+    tiers:new Map(),         // espnId -> tierNumber
+    drafted:new Map(),       // espnId -> {overall,round,teamId,source,keeper,auto}
+    aliases:{},              // sourceNameKey -> espnId (persisted, synced)
+    unmatched:[],            // {source, name, pos, team, rank} rows needing resolution
+    poll:{timer:null, lastGoodTs:0, lastErr:null, running:false},
+    ui:{posFilter:'ALL', hideDrafted:false, search:''},
   };
-  const LS_KEY = 'espnDraftAssist.creds.v1';
+  const LS = {
+    creds:'espnDraftAssist.creds.v1',
+    players:'espnDraftAssist.players.v1',
+    prefs:'espnDraftAssist.prefs.v1',
+    sync:'espnDraftAssist.sync.v1',
+  };
 
-  // ---- ESPN provider module ---------------------------------------------
-  // Isolated seam: everything that talks to ESPN goes through here, via the
-  // same-origin /api/espn proxy (blueprint §2 provider section, §3.5 contract).
+  // ===================================================================
+  // ESPN provider (only place that talks to ESPN, via /api/espn proxy)
+  // ===================================================================
   const ESPN = {
-    async call(path, { withAuth = true } = {}) {
-      const payload = { path };
+    async call(path, {withAuth=true, fantasyFilter=null} = {}) {
+      const payload = {path};
       if (withAuth && !S.creds.isPublic) {
         if (S.creds.espn_s2) payload.espn_s2 = S.creds.espn_s2;
         if (S.creds.swid) payload.swid = S.creds.swid;
       }
-      const res = await fetch('/api/espn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      let data = null;
+      if (fantasyFilter) payload.fantasyFilter = fantasyFilter;
+      const res = await fetch('/api/espn', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
       const raw = await res.text();
-      try { data = raw ? JSON.parse(raw) : null; } catch { data = null; }
-      return { status: res.status, data, raw };
+      let data=null; try{ data = raw ? JSON.parse(raw) : null; }catch{ data=null; }
+      return {status:res.status, data, raw};
     },
-
-    // Season derived at runtime from currentSeasonId so the app rolls over
-    // each year with no code change (§0).
-    async currentSeason() {
-      const { status, data } = await this.call('', { withAuth: false });
-      if (status >= 200 && status < 300 && data && data.currentSeasonId) {
-        return data.currentSeasonId;
-      }
-      throw new Error('Could not read current season (status ' + status + ')');
+    async currentSeason(){
+      const {status,data} = await this.call('', {withAuth:false});
+      if (status>=200 && status<300 && data && data.currentSeasonId) return data.currentSeasonId;
+      throw new Error('season lookup failed ('+status+')');
     },
-
-    // mSettings connect probe for a league. Returns { name, size }.
-    async leagueSettings(season, leagueId) {
-      const path = `/seasons/${season}/segments/0/leagues/${leagueId}?view=mSettings`;
-      const { status, data } = await this.call(path);
-      if (status === 401 || status === 403 || (data && data.error === 'auth')) {
-        const e = new Error('auth'); e.code = 'auth'; throw e;
-      }
-      // A 200 that is missing settings is also treated as an auth/shape failure
-      // for private leagues (C2: "a 200 missing teams -> prompt re-paste").
-      if (status < 200 || status >= 300 || !data || !data.settings) {
-        const e = new Error('shape'); e.code = 'shape'; e.status = status; throw e;
-      }
-      const st = data.settings;
-      return { name: st.name || '(unnamed league)', size: st.size ?? null };
+    // connect: one combined-view request
+    async connect(season, leagueId){
+      const path = `/seasons/${season}/segments/0/leagues/${leagueId}?view=mSettings&view=mTeam&view=mDraftDetail`;
+      const {status,data} = await this.call(path);
+      if (status===401 || status===403 || (data && data.error==='auth')) { const e=new Error('auth'); e.code='auth'; throw e; }
+      if (status<200 || status>=300 || !data || !data.settings) { const e=new Error('shape'); e.code='shape'; e.status=status; throw e; }
+      return data;
+    },
+    async draftDetail(season, leagueId){
+      const path = `/seasons/${season}/segments/0/leagues/${leagueId}?view=mDraftDetail`;
+      return this.call(path);
+    },
+    async playersUL(season){
+      const filter = {filterActive:{value:true}};
+      const path = `/seasons/${season}/players?view=players_wl`;
+      const {status,data} = await this.call(path, {withAuth:false, fantasyFilter:filter});
+      if (status<200 || status>=300 || !Array.isArray(data)) { const e=new Error('players shape'); e.code='shape'; e.status=status; throw e; }
+      return data;
+    },
+    async kona(season, leagueId, scoringType){
+      const rankType = scoringType==='STANDARD' ? 'STANDARD' : 'PPR';
+      const filter = {players:{limit:600, filterRanksForScoringPeriodIds:{value:[1]},
+        sortDraftRanks:{sortPriority:100, sortAsc:true, value:rankType}}};
+      const path = `/seasons/${season}/segments/0/leagues/${leagueId}?view=kona_player_info`;
+      const {status,data} = await this.call(path, {fantasyFilter:filter});
+      if (status<200 || status>=300 || !data) { const e=new Error('kona shape'); e.code='shape'; e.status=status; throw e; }
+      return data.players || [];
     },
   };
 
-  // ---- Credential persistence -------------------------------------------
-  function loadCreds() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
-      if (saved) Object.assign(S.creds, saved);
-    } catch { /* ignore corrupt */ }
+  // ===================================================================
+  // Persistence
+  // ===================================================================
+  function loadCreds(){ try{ const s=JSON.parse(localStorage.getItem(LS.creds)||'null'); if(s) Object.assign(S.creds,s);}catch{} }
+  function saveCreds(){ localStorage.setItem(LS.creds, JSON.stringify(S.creds)); }
+  function loadPrefs(){
+    try{ const p=JSON.parse(localStorage.getItem(LS.prefs)||'null');
+      if(p){ S.aliases=p.aliases||{}; if(p.sourceMeta) S._savedSourceMeta=p.sourceMeta; } }catch{}
   }
-  function saveCreds() {
-    localStorage.setItem(LS_KEY, JSON.stringify(S.creds));
+  function savePrefs(){
+    const sourceMeta = S.sources.map(s=>({id:s.id,name:s.name,weight:s.weight,enabled:s.enabled}));
+    localStorage.setItem(LS.prefs, JSON.stringify({aliases:S.aliases, sourceMeta}));
   }
-
-  function parseLeagueId(input) {
-    if (!input) return null;
-    const s = String(input).trim();
+  function parseLeagueId(input){
+    if(!input) return null;
+    const s=String(input).trim();
     const m = s.match(/leagueId=(\d+)/i) || s.match(/\/(\d{4,})(?:[/?#]|$)/) || s.match(/^(\d{2,})$/);
     return m ? m[1] : null;
   }
 
-  // ---- DOM ---------------------------------------------------------------
-  const $ = (id) => document.getElementById(id);
-  const els = {
-    openSettings: $('openSettings'), scrim: $('scrim'), drawer: $('drawer'),
-    leagueUrl: $('leagueUrl'), publicToggle: $('publicToggle'), privateFields: $('privateFields'),
-    swid: $('swid'), espnS2: $('espnS2'),
-    saveCreds: $('saveCreds'), testConn: $('testConn'), testResult: $('testResult'),
-    connPill: $('connPill'), connSub: $('connSub'), connKv: $('connKv'),
-    kvLeague: $('kvLeague'), kvTeams: $('kvTeams'), kvSeason: $('kvSeason'),
-  };
-
-  function openDrawer() { els.scrim.classList.add('open'); els.drawer.classList.add('open'); }
-  function closeDrawer() { els.scrim.classList.remove('open'); els.drawer.classList.remove('open'); }
-
-  function syncFormFromState() {
-    if (S.creds.leagueId) els.leagueUrl.value = S.creds.leagueId;
-    els.publicToggle.checked = !!S.creds.isPublic;
-    els.swid.value = S.creds.swid || '';
-    els.espnS2.value = S.creds.espn_s2 || '';
-    els.privateFields.classList.toggle('hidden', els.publicToggle.checked);
-  }
-
-  function readFormIntoState() {
-    S.creds.leagueId = parseLeagueId(els.leagueUrl.value);
-    S.creds.isPublic = els.publicToggle.checked;
-    S.creds.swid = els.swid.value.trim();
-    S.creds.espn_s2 = els.espnS2.value.trim();
-  }
-
-  function showResult(kind, html) {
-    els.testResult.className = 'test-result show ' + (kind || '');
-    els.testResult.innerHTML = html;
-  }
-
-  function setConnected(league, season) {
-    S.league = league; S.season = season;
-    els.connPill.className = 'pill ok';
-    els.connPill.textContent = 'Connected';
-    els.connSub.textContent = 'League settings loaded.';
-    els.connKv.style.display = 'grid';
-    els.kvLeague.textContent = league.name;
-    els.kvTeams.textContent = league.size != null ? String(league.size) : '—';
-    els.kvSeason.textContent = season != null ? String(season) : '—';
-  }
-
-  // ---- Test connection (Chunk 0 exit test) ------------------------------
-  async function testConnection() {
-    readFormIntoState();
-    if (!S.creds.leagueId) {
-      showResult('bad', '<div class="big">Missing league</div>Paste a league URL or ID first.');
-      return;
-    }
-    if (!S.creds.isPublic && (!S.creds.swid || !S.creds.espn_s2)) {
-      showResult('bad', '<div class="big">Missing credentials</div>' +
-        'Enter both SWID and espn_s2, or toggle “Public league”.');
-      return;
-    }
-    saveCreds();
-
-    els.testConn.disabled = true;
-    showResult('', '<span class="spin"></span> Contacting ESPN…');
-    try {
-      const season = await ESPN.currentSeason();
-      const league = await ESPN.leagueSettings(season, S.creds.leagueId);
-      setConnected(league, season);
-      showResult('good',
-        `<div class="big">✓ Connected</div>` +
-        `<div><b>${escapeHtml(league.name)}</b> — ` +
-        `${league.size != null ? league.size + ' teams' : 'team count unknown'} · ${season}</div>`);
-    } catch (err) {
-      if (err.code === 'auth') {
-        showResult('bad',
-          '<div class="big">Authentication failed</div>' +
-          'Your espn_s2 / SWID may have expired or been mistyped. Re-copy both from ' +
-          'espn.com and paste them again.');
-      } else if (err.code === 'shape') {
-        showResult('bad',
-          '<div class="big">No league data returned</div>' +
-          'Check the league ID' +
-          (S.creds.isPublic ? ' — if this is a private league, uncheck “Public”.' : '.') +
-          (err.status ? ' (status ' + err.status + ')' : ''));
-      } else {
-        showResult('bad', '<div class="big">Connection error</div>' + escapeHtml(err.message || String(err)));
+  // ===================================================================
+  // Chunk 1 — league bootstrap
+  // ===================================================================
+  function parseLeague(data){
+    const st = data.settings || {};
+    const roster = st.rosterSettings || {};
+    const slotCounts = roster.lineupSlotCounts || {};
+    const startingSlots = [];
+    let usesIDP = false;
+    for (const [slotId,count] of Object.entries(slotCounts)){
+      const id = +slotId, n = +count;
+      if (n>0 && !NON_STARTING_SLOTS.has(id)){
+        startingSlots.push({slot:id, label:SLOT_LABEL[id]||('slot'+id), count:n});
+        if ([8,9,10,11,12,13,14,15].includes(id)) usesIDP = true;
       }
-    } finally {
-      els.testConn.disabled = false;
+    }
+    // PPR sniff: statId 53 (receptions) points -> 1 PPR / 0.5 half / else standard.
+    let scoringType='STANDARD';
+    const items = (st.scoringSettings && st.scoringSettings.scoringItems) || [];
+    const rec = items.find(i => i.statId===53);
+    const pts = rec ? (rec.points ?? (rec.pointsOverrides && Object.values(rec.pointsOverrides)[0]) ?? 0) : 0;
+    if (pts>=1) scoringType='PPR'; else if (pts>0) scoringType='HALF';
+
+    const draftType = (st.draftSettings && st.draftSettings.type) || 'SNAKE';
+    const pickOrder = (st.draftSettings && st.draftSettings.pickOrder) || [];
+
+    const teams = (data.teams||[]).map(t=>({
+      id:t.id, abbrev:t.abbrev, owners:t.owners||[],
+      name:(t.name || [t.location,t.nickname].filter(Boolean).join(' ') || ('Team '+t.id)).trim(),
+    }));
+    const members = (data.members||[]).map(m=>({id:m.id, displayName:m.displayName||[m.firstName,m.lastName].filter(Boolean).join(' ')}));
+
+    // My-team auto-detect: match user's SWID against teams[].owners.
+    let myTeamId = null;
+    if (S.creds.swid){
+      const mySwid = S.creds.swid.trim();
+      const t = teams.find(tm => (tm.owners||[]).some(o => String(o).toUpperCase()===mySwid.toUpperCase()));
+      if (t) myTeamId = t.id;
+    }
+
+    S.league = {name:st.name||'(unnamed league)', size:st.size ?? teams.length,
+      scoringType, draftType, pickOrder, teams, members, myTeamId,
+      slotCounts, startingSlots, usesIDP,
+      keeperCount:(st.draftSettings&&st.draftSettings.keeperCount)||0};
+    return S.league;
+  }
+
+  // Snake math (C7 plain snake, no 3rd-round reversal). overall N -> teamId.
+  function teamOnClock(overallN){
+    const L=S.league; if(!L||!L.pickOrder.length) return null;
+    const size=L.size||L.pickOrder.length;
+    const r=Math.ceil(overallN/size);
+    const i=overallN-(r-1)*size;
+    const idx = (r%2===1) ? i-1 : size-i;
+    return L.pickOrder[idx] ?? null;
+  }
+  function overallsForTeam(teamId, count){
+    const L=S.league; if(!L) return [];
+    const size=L.size; const out=[];
+    for(let n=1; out.length<count && n<=size*20; n++){ if(teamOnClock(n)===teamId) out.push(n); }
+    return out;
+  }
+
+  // ===================================================================
+  // Chunk 2 — player universe
+  // ===================================================================
+  function decodePlayer(p){
+    const posId = p.defaultPositionId;
+    const pos = POS_MAP[posId] || ('P'+posId);
+    const team = PRO_TEAM[p.proTeamId] || '';
+    const name = p.fullName || [p.firstName,p.lastName].filter(Boolean).join(' ');
+    return {
+      pid:'espn:'+p.id, espnId:p.id, name, nameKey:norm(name), pos, posId, team,
+      eligibleSlots:p.eligibleSlots||[], percentOwned:(p.ownership&&p.ownership.percentOwned)||0,
+    };
+  }
+  function buildUniverse(rawArr, usesIDP){
+    const players=new Map(), nameIndex=new Map();
+    let dst=0;
+    for(const p of rawArr){
+      const posId=p.defaultPositionId;
+      if(posId===14||posId===15) continue;                 // always drop Coach/TQB phantoms
+      if(p.id<0 && posId!==16) continue;                   // negative id is D/ST only when posId===16
+      if(IDP_POS.has(posId) && !usesIDP) continue;         // IDP only if league uses IDP slots
+      if(!OFFENSE_K_DST.has(posId) && !(usesIDP && IDP_POS.has(posId))) continue;
+      const rec=decodePlayer(p);
+      if(posId===16) dst++;
+      players.set(rec.espnId, rec);
+      if(!nameIndex.has(rec.nameKey)) nameIndex.set(rec.nameKey, []);
+      nameIndex.get(rec.nameKey).push(rec.espnId);
+    }
+    return {players, nameIndex, dst};
+  }
+  async function loadPlayers({force=false} = {}){
+    // Cache: keyed by season + fetch date; refresh if >3 days old.
+    if(!force){
+      try{
+        const c=JSON.parse(localStorage.getItem(LS.players)||'null');
+        if(c && c.season===S.season && (Date.now()-c.ts) < 3*864e5 && Array.isArray(c.recs)){
+          hydrateUniverse(c.recs); return {cached:true, count:c.recs.length};
+        }
+      }catch{}
+    }
+    const raw = await ESPN.playersUL(S.season);
+    const {players,nameIndex,dst} = buildUniverse(raw, S.league ? S.league.usesIDP : false);
+    S.players=players; S.nameIndex=nameIndex;
+    const recs=[...players.values()];
+    try{ localStorage.setItem(LS.players, JSON.stringify({season:S.season, ts:Date.now(), recs})); }catch{}
+    return {cached:false, count:recs.length, dst};
+  }
+  function hydrateUniverse(recs){
+    const players=new Map(), nameIndex=new Map();
+    for(const r of recs){ players.set(r.espnId, r); if(!nameIndex.has(r.nameKey)) nameIndex.set(r.nameKey,[]); nameIndex.get(r.nameKey).push(r.espnId); }
+    S.players=players; S.nameIndex=nameIndex;
+  }
+
+  // ===================================================================
+  // Chunk 3 — sources, matching, blend
+  // ===================================================================
+  function matchByName(name, pos, team){
+    const key=norm(name);
+    // alias overrides first (persisted resolutions + base aliases)
+    const aliasTarget = S.aliases[key] || (BASE_ALIASES[key] && firstIdForKey(BASE_ALIASES[key]));
+    if(aliasTarget && S.players.has(aliasTarget)) return aliasTarget;
+    let ids = S.nameIndex.get(key) || (BASE_ALIASES[key] ? (S.nameIndex.get(BASE_ALIASES[key])||[]) : []);
+    if(ids.length===1) return ids[0];
+    if(ids.length>1){
+      // tie-break by pos then team
+      let cand=ids.filter(id=>S.players.get(id).pos===pos);
+      if(cand.length===1) return cand[0];
+      if(team){ const c2=cand.filter(id=>S.players.get(id).team===team); if(c2.length>=1) return c2[0]; }
+      if(cand.length>=1) return cand[0];
+      return ids[0];
+    }
+    return null;
+  }
+  function firstIdForKey(k){ const a=S.nameIndex.get(k); return a&&a.length?a[0]:null; }
+  function matchDST(name){
+    // D/ST matched by team name/abbrev, never person-name norm.
+    const k=norm(name);
+    let abbr=null;
+    for(const [word,ab] of Object.entries(TEAM_NAMES)){ if(k.includes(word)){ abbr=ab; break; } }
+    if(!abbr && /^[a-z]{2,3}$/.test(k)) abbr=k.toUpperCase();
+    if(!abbr) return null;
+    for(const [id,pl] of S.players){ if(pl.pos==='DST' && pl.team===abbr) return id; }
+    return null;
+  }
+
+  function upsertSource(meta, entries){
+    // entries: [{espnId?, name?, pos?, team?, rank, adp?, proj?, value?}]
+    let src = S.sources.find(s=>s.id===meta.id);
+    if(!src){ src={id:meta.id, name:meta.name, weight:meta.weight??1, enabled:true, byId:new Map(),
+      isAdp:!!meta.isAdp, isEspn:!!meta.isEspn}; S.sources.push(src); }
+    else { src.byId=new Map(); if(meta.name) src.name=meta.name; }
+    const unmatched=[];
+    for(const e of entries){
+      let id=e.espnId;
+      if(id==null){
+        const isDst=(e.pos==='DST'||e.pos==='D/ST'||/d\/?st|defense/i.test(e.name||''));
+        id = isDst ? matchDST(e.name) : matchByName(e.name, e.pos, e.team);
+      }
+      if(id==null || !S.players.has(id)){ unmatched.push({source:src.name, sourceId:src.id, name:e.name, pos:e.pos, team:e.team, rank:e.rank}); continue; }
+      src.byId.set(id, {rank:e.rank, adp:e.adp, proj:e.proj, value:e.value});
+    }
+    // merge unmatched for this source (replace prior for same source)
+    S.unmatched = S.unmatched.filter(u=>u.sourceId!==src.id).concat(unmatched);
+    return {matched:src.byId.size, unmatched:unmatched.length};
+  }
+
+  function computeBlend(){
+    const active=S.sources.filter(s=>s.enabled && s.weight>0 && s.byId.size);
+    const blend=new Map(), adpMap=new Map(), projMap=new Map();
+    for(const [id] of S.players){
+      let wr=0, w=0, adpN=0, adpW=0, proj=null;
+      for(const s of active){
+        const e=s.byId.get(id); if(!e) continue;
+        if(e.rank!=null){ wr+=e.rank*s.weight; w+=s.weight; }
+        if(e.adp!=null){ adpN+=e.adp; adpW++; }
+        if(e.proj!=null){ proj=Math.max(proj??0, e.proj); }
+      }
+      if(w>0) blend.set(id, {rank:wr/w});
+      if(adpW>0) adpMap.set(id, adpN/adpW);
+      if(proj!=null) projMap.set(id, proj);
+    }
+    // sort by blended rank, assign display order + value + tiers
+    const ranked=[...blend.entries()].sort((a,b)=>a[1].rank-b[1].rank);
+    const N=ranked.length;
+    ranked.forEach(([id,v],i)=>{ v.order=i+1; v.adp=adpMap.get(id) ?? null; v.proj=projMap.get(id) ?? null;
+      v.value = v.proj!=null ? v.proj : Math.round(1000*Math.exp(-(i+1)/28)); });
+    // tier detection via value cliffs (gap > mean + 1.2*std of gaps)
+    S.tiers=new Map();
+    if(ranked.length){
+      const gaps=[]; for(let i=1;i<ranked.length;i++) gaps.push(ranked[i-1][1].value - ranked[i][1].value);
+      const mean=gaps.reduce((a,b)=>a+b,0)/(gaps.length||1);
+      const sd=Math.sqrt(gaps.reduce((a,b)=>a+(b-mean)**2,0)/(gaps.length||1));
+      const thresh=mean + 1.2*sd;
+      let tier=1; S.tiers.set(ranked[0][0], 1);
+      for(let i=1;i<ranked.length;i++){ if((ranked[i-1][1].value - ranked[i][1].value) > thresh) tier++; S.tiers.set(ranked[i][0], tier); }
+    }
+    S.blend=blend; S.adpMap=adpMap;
+    return ranked;
+  }
+  function adpBaseline(){ // prefer an explicit ADP source; else the ESPN-ADP source
+    return S.adpMap || new Map();
+  }
+
+  // ---- FantasyPros ECR CSV ----
+  function parseCSV(text){
+    const rows=[]; let i=0, field='', row=[], inQ=false;
+    while(i<text.length){
+      const c=text[i];
+      if(inQ){ if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;} else inQ=false; } else field+=c; }
+      else { if(c==='"') inQ=true; else if(c===','){ row.push(field); field=''; }
+        else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n')i++; row.push(field); rows.push(row); row=[]; field=''; }
+        else field+=c; }
+      i++;
+    }
+    if(field.length||row.length){ row.push(field); rows.push(row); }
+    return rows.filter(r=>r.some(x=>String(x).trim()!==''));
+  }
+  function ingestFantasyPros(text){
+    const rows=parseCSV(text);
+    if(!rows.length) return {matched:0, unmatched:0, error:'empty'};
+    const header=rows[0].map(h=>h.trim().toLowerCase());
+    const idx=(...names)=>{ for(const n of names){ const k=header.findIndex(h=>h.includes(n)); if(k>=0) return k; } return -1; };
+    const cRank=idx('rk','rank'), cName=idx('player name','player','name'),
+      cTeam=idx('team'), cPos=idx('pos'), cAdp=idx('adp');
+    if(cName<0) return {matched:0, unmatched:0, error:'no name column'};
+    const entries=[];
+    let r=1;
+    for(; r<rows.length; r++){
+      const row=rows[r];
+      const name=(row[cName]||'').trim(); if(!name) continue;
+      const rank=cRank>=0 ? parseFloat(String(row[cRank]).replace(/[^0-9.]/g,'')) : r;
+      let pos=cPos>=0 ? (row[cPos]||'').replace(/[0-9]/g,'').trim().toUpperCase() : '';
+      if(pos==='DEF'||pos==='DST') pos='DST';
+      const team=cTeam>=0 ? (row[cTeam]||'').trim().toUpperCase() : '';
+      const adp=cAdp>=0 ? parseFloat(String(row[cAdp]).replace(/[^0-9.]/g,'')) : null;
+      entries.push({name, pos, team, rank:isNaN(rank)?r:rank, adp:(adp!=null&&!isNaN(adp))?adp:null});
+    }
+    return upsertSource({id:'fp', name:'FantasyPros ECR', weight:2}, entries);
+  }
+
+  // ---- ESPN kona ranks/ADP ----
+  async function loadEspnRanks(){
+    const arr = await ESPN.kona(S.season, S.creds.leagueId, S.league.scoringType);
+    const rankType = S.league.scoringType==='STANDARD' ? 'STANDARD' : 'PPR';
+    const rankEntries=[], adpEntries=[];
+    for(const wrap of arr){
+      const p=wrap.player || wrap;
+      const id=p.id; if(id==null) continue;
+      const dr=p.draftRanksByRankType || {};
+      const rk=(dr[rankType]&&dr[rankType].rank) ?? (dr.PPR&&dr.PPR.rank) ?? (dr.STANDARD&&dr.STANDARD.rank);
+      const adp=(p.ownership&&p.ownership.averageDraftPosition) ?? null;
+      let proj=null;
+      if(Array.isArray(p.stats)){ const s=p.stats.find(x=>x.statSourceId===1 && (x.appliedTotal!=null)); if(s) proj=s.appliedTotal; }
+      if(rk!=null || proj!=null) rankEntries.push({espnId:id, rank:rk ?? undefined, proj});
+      if(adp!=null && adp>0) adpEntries.push({espnId:id, rank:adp, adp});
+    }
+    const r1=upsertSource({id:'espn_rank', name:'ESPN Rank', weight:1, isEspn:true}, rankEntries.map(e=>({espnId:e.espnId, rank:e.rank, proj:e.proj})));
+    const r2=upsertSource({id:'espn_adp', name:'ESPN ADP', weight:1, isAdp:true, isEspn:true}, adpEntries);
+    return {rank:r1, adp:r2};
+  }
+
+  // ===================================================================
+  // Chunk 4 — draft state engine (unified: manual always live; API merges)
+  // ===================================================================
+  function ingestPicks(dd, {isKeeperPass=false} = {}){
+    // dd = draftDetail object. Merge API picks into S.drafted; reconcile with manual.
+    const detail = dd.draftDetail || dd;
+    const picks = (detail && detail.picks) || [];
+    let conflicts=0, added=0;
+    // Build overall->api pick
+    for(const pk of picks){
+      const pid=pk.playerId; if(pid==null) continue;
+      const overall=pk.overallPickNumber ?? null;
+      const info={overall, round:pk.roundId, teamId:pk.teamId, source:'api',
+        keeper:!!pk.keeper, auto:!!pk.autoDraftTypeId};
+      const existing=S.drafted.get(pid);
+      if(existing){
+        if(existing.source==='manual'){
+          // confirmation (same player drafted) -> silently upgrade to api
+          existing.source='api'; if(overall!=null) existing.overall=overall;
+          existing.round=info.round; existing.teamId=info.teamId; existing.keeper=info.keeper; existing.auto=info.auto;
+        }
+      } else {
+        S.drafted.set(pid, info); added++;
+      }
+    }
+    // Detect true conflicts: a manual pick at an overall the API assigned to a different player.
+    if(!isKeeperPass){
+      const apiByOverall=new Map(); for(const pk of picks){ if(pk.overallPickNumber!=null) apiByOverall.set(pk.overallPickNumber, pk.playerId); }
+      for(const [id,info] of S.drafted){
+        if(info.source==='manual' && info.overall!=null && apiByOverall.has(info.overall)){
+          const apiPid=apiByOverall.get(info.overall);
+          if(apiPid!==id){ conflicts++; info.conflict={apiPid}; } else if(info.conflict) delete info.conflict;
+        }
+      }
+    }
+    detail && (S._draftMeta={inProgress:!!detail.inProgress, complete:!!detail.drafted, apiPickCount:picks.length});
+    return {added, conflicts, apiPickCount:picks.length};
+  }
+
+  function nextOpenOverall(){
+    let n=1; const used=new Set([...S.drafted.values()].map(d=>d.overall).filter(x=>x!=null));
+    while(used.has(n)) n++;
+    return n;
+  }
+  function manualPick(espnId){
+    if(S.drafted.has(espnId)) return;
+    const overall=nextOpenOverall();
+    S.drafted.set(espnId, {overall, round:Math.ceil(overall/(S.league?.size||12)),
+      teamId:teamOnClock(overall), source:'manual', keeper:false, auto:false});
+    S._lastManual=espnId;
+    afterDraftChange();
+  }
+  function undoLast(){
+    // undo most recent manual pick
+    let target=null, maxO=-1;
+    for(const [id,info] of S.drafted){ if(info.source==='manual' && info.overall>maxO){ maxO=info.overall; target=id; } }
+    if(target!=null){ S.drafted.delete(target); afterDraftChange(); }
+  }
+
+  async function pollOnce(){
+    if(!S.league) return;
+    try{
+      const {status,data} = await ESPN.draftDetail(S.season, S.creds.leagueId);
+      if(status===401||status===403||(data&&data.error==='auth')){ onAuthExpired(); return; }
+      if(status<200||status>=300||!data){ S.poll.lastErr='http '+status; refreshStale(); return; }
+      ingestPicks(data);
+      S.poll.lastGoodTs=Date.now(); S.poll.lastErr=null;
+      afterDraftChange();
+      if(S._draftMeta && S._draftMeta.complete) stopPoll();
+    }catch(err){ S.poll.lastErr=String(err.message||err); refreshStale(); }
+  }
+  function startPoll(){
+    if(S.poll.timer) return;
+    S.poll.running=true;
+    pollOnce();
+    S.poll.timer=setInterval(pollOnce, 15000); // ≥12–15s floor (C5)
+  }
+  function stopPoll(){ if(S.poll.timer){ clearInterval(S.poll.timer); S.poll.timer=null; } S.poll.running=false; }
+
+  // ===================================================================
+  // Rendering
+  // ===================================================================
+  function afterConnect(){
+    renderHeader(); renderNeeds(); renderDraftTab(); renderPosFilters();
+    renderSources(); renderBoard(); renderResolver();
+  }
+  function afterDraftChange(){ renderHeader(); renderBoard(); renderNeeds(); renderDraftTab(); renderRecCard(); }
+  function afterBlendChange(){ computeBlend(); renderBoard(); renderRecCard(); renderNeeds(); }
+
+  function draftPhase(){
+    if(!S._draftMeta) return S.drafted.size ? 'live' : 'pre';
+    if(S._draftMeta.complete) return 'done';
+    if(S._draftMeta.inProgress || S.drafted.size) return 'live';
+    return 'pre';
+  }
+  function renderHeader(){
+    const dot=$('statusDot'), who=$('whoLine');
+    if(!S.league){ dot.className='status-dot'; who.textContent='Not connected'; return; }
+    const phase=draftPhase();
+    dot.className='status-dot '+(phase==='live'?'live':phase==='done'?'done':'pre');
+    const myTeam=S.league.teams.find(t=>t.id===S.league.myTeamId);
+    who.textContent = `${S.league.name} · ${myTeam?('You: '+myTeam.name):'pick your team'} · ${phase==='pre'?'pre-draft':phase==='live'?'LIVE':'complete'}`;
+  }
+
+  function posOptions(){
+    const base=['ALL','QB','RB','WR','TE','FLEX','K','DST'];
+    if(S.league && S.league.usesIDP) base.push('IDP');
+    return base;
+  }
+  function renderPosFilters(){
+    const wrap=$('posFilters'); wrap.innerHTML='';
+    for(const p of posOptions()){
+      const b=el('button','chip'+(S.ui.posFilter===p?' on':''), p);
+      b.onclick=()=>{ S.ui.posFilter=p; renderPosFilters(); renderBoard(); };
+      wrap.appendChild(b);
     }
   }
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, c =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function playerMatchesFilter(pl){
+    const f=S.ui.posFilter;
+    if(f==='ALL') return true;
+    if(f==='FLEX') return pl.eligibleSlots.includes(23);
+    if(f==='IDP') return IDP_POS.has(pl.posId);
+    return pl.pos===f;
   }
 
-  // ---- Wire up -----------------------------------------------------------
-  els.openSettings.addEventListener('click', openDrawer);
-  els.scrim.addEventListener('click', closeDrawer);
-  els.publicToggle.addEventListener('change', () => {
-    els.privateFields.classList.toggle('hidden', els.publicToggle.checked);
-  });
-  els.saveCreds.addEventListener('click', () => {
-    readFormIntoState(); saveCreds();
-    showResult('good', '<div class="big">Saved</div>Credentials stored in this browser.');
-  });
-  els.testConn.addEventListener('click', testConnection);
+  function renderBoard(){
+    const list=$('boardList');
+    if(!S.players.size){ list.innerHTML='<div class="empty"><div class="big">No board yet</div>Connect a league and load players & a ranking source.</div>'; return; }
+    const ranked=computeBlend();
+    if(!ranked.length){ list.innerHTML='<div class="empty"><div class="big">No rankings loaded</div>Go to Sources → load ESPN ranks or upload a FantasyPros CSV.</div>'; return; }
+    const adp=adpBaseline();
+    const q=norm(S.ui.search);
+    list.innerHTML='';
+    let shown=0, lastTier=null;
+    for(const [id,v] of ranked){
+      const pl=S.players.get(id); if(!pl) continue;
+      if(!playerMatchesFilter(pl)) continue;
+      const isDrafted=S.drafted.has(id);
+      if(S.ui.hideDrafted && isDrafted) continue;
+      if(q && !pl.nameKey.includes(q) && !pl.team.toLowerCase().includes(S.ui.search.toLowerCase())) continue;
+      if(shown>=250) break;
 
-  // ---- Boot --------------------------------------------------------------
-  loadCreds();
-  syncFormFromState();
+      const tier=S.tiers.get(id);
+      if(tier!==lastTier){ const sep=el('div','tier-sep','Tier '+tier); list.appendChild(sep); lastTier=tier; }
+
+      const row=el('div','prow'+(isDrafted?' drafted':''));
+      const rank=el('div','rank', String(v.order));
+      const mid=el('div');
+      mid.appendChild(el('div','pname', esc(pl.name)));
+      const meta=el('div','meta');
+      meta.appendChild(el('span','pos '+pl.pos, pl.pos));
+      meta.appendChild(el('span','', esc(pl.team||'FA')));
+      if(v.proj!=null) meta.appendChild(el('span','dim', Math.round(v.proj)+' pts'));
+      if(isDrafted){ const d=S.drafted.get(id);
+        meta.appendChild(el('span','tag '+(d.keeper?'keeper':d.source==='api'?'api':'manual'),
+          d.keeper?'KEEPER':(d.source==='api'?('#'+(d.overall||'?')):('#'+(d.overall||'?')+' manual')))); }
+      mid.appendChild(meta);
+
+      const right=el('div','right');
+      const a=adp.get(id);
+      if(a!=null){
+        const delta=Math.round(a - v.order);
+        const cls=delta>=8?'steal':delta<=-8?'reach':'';
+        right.appendChild(el('div','delta '+cls, (delta>0?'+':'')+delta+' vs ADP'));
+        right.appendChild(el('div','dim','ADP '+Math.round(a)));
+      }
+      if(!isDrafted){ const b=el('button','mini-btn','Draft'); b.onclick=()=>{ manualPick(id); }; right.appendChild(b); }
+      row.appendChild(rank); row.appendChild(mid); row.appendChild(right);
+      list.appendChild(row);
+      shown++;
+    }
+    if(!shown) list.innerHTML='<div class="empty"><div class="big">Nothing here</div>Adjust filters or search.</div>';
+  }
+
+  // Needs (Chunk 5): starting slots minus my roster, via eligibleSlots fit.
+  function myRosterPlayers(){
+    if(!S.league) return [];
+    const out=[];
+    for(const [id,info] of S.drafted){ if(info.teamId===S.league.myTeamId){ const pl=S.players.get(id); if(pl) out.push({pl,info}); } }
+    return out.sort((a,b)=>(a.info.overall||0)-(b.info.overall||0));
+  }
+  function computeNeeds(){
+    if(!S.league) return [];
+    const roster=myRosterPlayers().map(r=>r.pl);
+    // greedily fill starting slots by best fit
+    const need=[];
+    for(const slot of S.league.startingSlots){
+      need.push({slot:slot.slot, label:slot.label, total:slot.count, filled:0});
+    }
+    const pool=[...roster];
+    for(const n of need){
+      for(let k=0;k<n.total;k++){
+        const idx=pool.findIndex(pl=>pl.eligibleSlots.includes(n.slot));
+        if(idx>=0){ n.filled++; pool.splice(idx,1); }
+      }
+    }
+    return need;
+  }
+  function renderNeeds(){
+    const grid=$('needsGrid');
+    const teamName=$('needsTeamName');
+    if(!S.league){ grid.innerHTML='<div class="muted small">Connect a league to see starting slots.</div>'; return; }
+    const myTeam=S.league.teams.find(t=>t.id===S.league.myTeamId);
+    teamName.textContent = myTeam?myTeam.name:'your team';
+    const needs=computeNeeds();
+    grid.innerHTML='';
+    for(const n of needs){
+      const open=n.total-n.filled;
+      const cell=el('div','slotcell'+(open<=0?' filled':' need'));
+      cell.appendChild(el('div','n', esc(n.label)));
+      cell.appendChild(el('div','b', `${n.filled}/${n.total}`));
+      grid.appendChild(cell);
+    }
+    // roster list
+    const rl=$('myRoster'); const rp=myRosterPlayers();
+    if(!rp.length){ rl.textContent='No picks yet.'; }
+    else{ rl.innerHTML=rp.map(({pl,info})=>`<div class="row" style="padding:3px 0;"><span class="pos ${pl.pos}">${pl.pos}</span> <span class="grow">${esc(pl.name)}</span> <span class="dim">#${info.overall||'?'}</span></div>`).join(''); }
+  }
+
+  // Recommendation card (Chunk 5): best available weighted by unfilled starting slots.
+  function renderRecCard(){
+    const card=$('recCard');
+    if(!S.league || !S.blend.size){ card.style.display='none'; return; }
+    const needs=computeNeeds().filter(n=>n.total-n.filled>0);
+    const openSlots=new Set(needs.map(n=>n.slot));
+    const ranked=[...S.blend.entries()].filter(([id])=>!S.drafted.has(id)).sort((a,b)=>a[1].order-b[1].order);
+    if(!ranked.length){ card.style.display='none'; return; }
+    // score: base value + need bonus if player fills an open starting slot
+    let best=null, bestScore=-1e9;
+    for(const [id,v] of ranked.slice(0,40)){
+      const pl=S.players.get(id); if(!pl) continue;
+      const fillsNeed=pl.eligibleSlots.some(s=>openSlots.has(s));
+      const score=v.value*(fillsNeed?1.15:1) - v.order*0.5;
+      if(score>bestScore){ bestScore=score; best={id,v,pl,fillsNeed}; }
+    }
+    if(!best){ card.style.display='none'; return; }
+    const adp=adpBaseline().get(best.id);
+    const deltaTxt = adp!=null ? `${Math.round(adp-best.v.order)>=0?'+':''}${Math.round(adp-best.v.order)} vs ADP` : '';
+    const need=needs.find(n=>best.pl.eligibleSlots.includes(n.slot));
+    card.style.display='block';
+    card.innerHTML=`<div class="lead">Recommended pick</div>
+      <div class="pick">${esc(best.pl.name)} <span class="pos ${best.pl.pos}" style="font-size:12px;vertical-align:2px;">${best.pl.pos}</span> <span class="muted" style="font-size:14px;">${esc(best.pl.team||'')}</span></div>
+      <div class="why">Board #${best.v.order}${best.v.proj!=null?` · ${Math.round(best.v.proj)} proj`:''}${deltaTxt?` · ${deltaTxt}`:''}${need?` · fills ${esc(need.label)}`:' · best available'}</div>`;
+  }
+
+  // Draft tab
+  function renderDraftTab(){
+    const pill=$('draftPill');
+    const phase=draftPhase();
+    pill.className='pill '+(phase==='live'?'ok':phase==='done'?'neutral':'neutral');
+    pill.textContent=phase==='pre'?'Pre-draft':phase==='live'?'LIVE':'Complete';
+    if(S.league){
+      const size=S.league.size;
+      const next=nextOpenOverall();
+      const oc=teamOnClock(next);
+      const ocTeam=S.league.teams.find(t=>t.id===oc);
+      $('onClock').textContent = ocTeam?`${ocTeam.name} (#${next})`:'—';
+      if(S.league.myTeamId!=null){
+        const mine=overallsForTeam(S.league.myTeamId, 30).filter(n=>n>=next);
+        $('nextPick').textContent = mine.length? `#${mine[0]} (in ${mine[0]-next} pick${mine[0]-next===1?'':'s'})` : '—';
+      } else $('nextPick').textContent='(set your team)';
+      $('pickCount').textContent=String([...S.drafted.values()].filter(d=>!d.keeper).length)+(S._draftMeta?` (API ${S._draftMeta.apiPickCount})`:'');
+    }
+    const ls=$('lastSync');
+    if(S.poll.lastGoodTs){ const secs=Math.round((Date.now()-S.poll.lastGoodTs)/1000); ls.textContent=`${secs}s ago${S.poll.lastErr?' · error':''}`; }
+    else ls.textContent = S.poll.running?'polling…':'not polling';
+    // recent picks
+    const rp=$('recentPicks');
+    const all=[...S.drafted.entries()].sort((a,b)=>(b[1].overall||0)-(a[1].overall||0)).slice(0,15);
+    if(!all.length) rp.textContent='No picks yet.';
+    else rp.innerHTML=all.map(([id,info])=>{ const pl=S.players.get(id);
+      const team=S.league?.teams.find(t=>t.id===info.teamId);
+      return `<div class="row" style="padding:3px 0;"><span class="dim" style="width:34px;">#${info.overall||'?'}</span>
+        <span class="pos ${pl?pl.pos:''}">${pl?pl.pos:'?'}</span>
+        <span class="grow">${esc(pl?pl.name:('id '+id))}</span>
+        <span class="tag ${info.keeper?'keeper':info.source}">${info.keeper?'KEEP':info.source==='api'?(info.auto?'AUTO':'API'):'MAN'}</span>
+        <span class="dim small">${esc(team?team.abbrev||team.name:'')}</span></div>`;
+    }).join('');
+  }
+
+  // Sources tab
+  function renderSources(){
+    const wrap=$('sourceList');
+    if(!S.sources.length){ wrap.innerHTML='<div class="muted small">No sources yet. Load ESPN ranks or upload a CSV below.</div>'; return; }
+    wrap.innerHTML='';
+    for(const s of S.sources){
+      const box=el('div','src');
+      const top=el('div','top');
+      const cb=el('input'); cb.type='checkbox'; cb.checked=s.enabled; cb.style.width='18px'; cb.style.height='18px';
+      cb.onchange=()=>{ s.enabled=cb.checked; savePrefs(); afterBlendChange(); };
+      top.appendChild(cb);
+      top.appendChild(el('div','nm', esc(s.name)));
+      top.appendChild(el('div','cnt', s.byId.size+' players'));
+      const wt=el('div','wt', String(s.weight)); top.appendChild(wt);
+      box.appendChild(top);
+      const rng=el('input'); rng.type='range'; rng.min='0'; rng.max='5'; rng.step='0.5'; rng.value=String(s.weight);
+      rng.oninput=()=>{ s.weight=parseFloat(rng.value); wt.textContent=String(s.weight); };
+      rng.onchange=()=>{ savePrefs(); afterBlendChange(); };
+      box.appendChild(rng);
+      wrap.appendChild(box);
+    }
+  }
+  function renderResolver(){
+    const card=$('resolverCard'), list=$('resolverList'), cnt=$('resolverCount');
+    if(!S.unmatched.length){ card.style.display='none'; return; }
+    card.style.display='block'; cnt.textContent=String(S.unmatched.length);
+    list.innerHTML='';
+    for(const u of S.unmatched.slice(0,60)){
+      const row=el('div','row'); row.style.padding='6px 0'; row.style.borderBottom='1px solid var(--line)';
+      row.appendChild(el('div','grow', `<b>${esc(u.name)}</b> <span class="dim small">${esc(u.pos||'')} ${esc(u.team||'')} · ${esc(u.source)}</span>`));
+      const sel=el('select'); sel.style.maxWidth='190px';
+      sel.appendChild(el('option','', '<option value="">— link to —</option>'.replace(/^<option[^>]*>|<\/option>$/g,'')));
+      // suggestions: same nameKey prefix
+      const key=norm(u.name);
+      const cands=[...S.players.values()].filter(p=>p.pos===(u.pos==='D/ST'?'DST':u.pos)||!u.pos)
+        .filter(p=>p.nameKey.startsWith(key.slice(0,4))||p.nameKey.includes(key.slice(0,5)))
+        .slice(0,12);
+      const opt0=document.createElement('option'); opt0.value=''; opt0.textContent='— link to —'; sel.appendChild(opt0);
+      for(const c of cands){ const o=document.createElement('option'); o.value=String(c.espnId); o.textContent=`${c.name} (${c.pos} ${c.team})`; sel.appendChild(o); }
+      sel.onchange=()=>{ if(sel.value){ S.aliases[key]=+sel.value; savePrefs();
+        // re-run matching for that source's stored row
+        const src=S.sources.find(x=>x.id===u.sourceId);
+        if(src){ src.byId.set(+sel.value, {rank:u.rank}); }
+        S.unmatched=S.unmatched.filter(x=>!(x.sourceId===u.sourceId && norm(x.name)===key));
+        renderResolver(); afterBlendChange(); } };
+      row.appendChild(sel);
+      list.appendChild(row);
+    }
+  }
+
+  // Manual typeahead
+  function renderManualList(qstr){
+    const list=$('manualList'); const q=norm(qstr);
+    if(!q){ list.classList.remove('show'); list.innerHTML=''; return; }
+    const matches=[];
+    for(const [id,pl] of S.players){ if(S.drafted.has(id)) continue; if(pl.nameKey.includes(q)){ matches.push(pl); if(matches.length>=30) break; } }
+    matches.sort((a,b)=>{ const va=S.blend.get(a.espnId), vb=S.blend.get(b.espnId);
+      return (va?va.order:9999)-(vb?vb.order:9999); });
+    list.innerHTML='';
+    for(const pl of matches.slice(0,20)){
+      const it=el('div','ta-item');
+      it.innerHTML=`<span class="pos ${pl.pos}">${pl.pos}</span><span class="grow">${esc(pl.name)}</span><span class="dim">${esc(pl.team)}</span>`;
+      it.onclick=()=>{ manualPick(pl.espnId); $('manualInput').value=''; list.classList.remove('show'); };
+      list.appendChild(it);
+    }
+    list.classList.toggle('show', matches.length>0);
+  }
+
+  // ===================================================================
+  // Stale + auth handling (Chunk 7)
+  // ===================================================================
+  function refreshStale(){
+    const b=$('banner');
+    const since = S.poll.lastGoodTs ? (Date.now()-S.poll.lastGoodTs) : Infinity;
+    if(S.poll.running && since>60000){
+      b.className='banner warn show';
+      b.innerHTML=`⚠︎ Stale data — last good sync ${isFinite(since)?Math.round(since/1000)+'s':'never'} ago. Showing last known board.`;
+    } else if(b.dataset.mode!=='auth') b.className='banner';
+    renderDraftTab();
+  }
+  function onAuthExpired(){
+    const b=$('banner'); b.dataset.mode='auth'; b.className='banner bad show';
+    b.innerHTML=`🔒 ESPN login expired. Re-paste your cookies to keep syncing. `;
+    const btn=el('button','','Re-paste'); btn.onclick=()=>{ b.className='banner'; b.dataset.mode=''; openDrawer(); };
+    b.appendChild(btn);
+  }
+  function clearBanner(){ const b=$('banner'); b.className='banner'; b.dataset.mode=''; }
+  setInterval(()=>{ if(S.poll.running) refreshStale(); }, 5000);
+
+  // ===================================================================
+  // Sync (Chunk 6)
+  // ===================================================================
+  function syncPayload(){
+    // custom rankings/weights/renames/aliases only — NEVER cookies.
+    return {
+      v:1,
+      aliases:S.aliases,
+      sources:S.sources.map(s=>({id:s.id, name:s.name, weight:s.weight, enabled:s.enabled,
+        // include user-uploaded ranks (fp/custom) so they travel; ESPN re-fetched
+        ranks: (s.id==='espn_rank'||s.id==='espn_adp') ? null : [...s.byId.entries()].map(([id,e])=>[id,e.rank]) })),
+      prefs:{posFilter:S.ui.posFilter},
+    };
+  }
+  async function syncSave(){
+    const res=$('syncResult');
+    res.className='result show'; res.innerHTML='<span class="spin"></span> Saving…';
+    try{
+      const r=await fetch('/api/sync', {method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'save', data:syncPayload()})});
+      const j=await r.json();
+      if(j.code){ res.className='result show good'; res.innerHTML=`<div class="big">Code: ${j.code}</div>Enter this on another device to load your setup.`;
+        localStorage.setItem(LS.sync, j.code); }
+      else if(j.error==='sync_unconfigured'){ res.className='result show'; res.innerHTML='Cloud sync isn\'t configured on this deploy. Your setup is still saved locally in this browser.'; }
+      else { res.className='result show bad'; res.innerHTML='Save failed: '+esc(j.error||'unknown'); }
+    }catch(e){ res.className='result show bad'; res.innerHTML='Save failed: '+esc(e.message||e); }
+  }
+  async function syncLoad(){
+    const code=$('syncCode').value.trim().toUpperCase(); const res=$('syncResult');
+    if(!code){ res.className='result show bad'; res.innerHTML='Enter a code first.'; return; }
+    res.className='result show'; res.innerHTML='<span class="spin"></span> Loading…';
+    try{
+      const r=await fetch('/api/sync', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'load', code})});
+      const j=await r.json();
+      if(j.data){ applySync(j.data); res.className='result show good'; res.innerHTML='<div class="big">Loaded</div>Your rankings, weights and aliases were applied.'; }
+      else { res.className='result show bad'; res.innerHTML='Load failed: '+esc(j.error||'not found'); }
+    }catch(e){ res.className='result show bad'; res.innerHTML='Load failed: '+esc(e.message||e); }
+  }
+  function applySync(data){
+    if(data.aliases) S.aliases=Object.assign({}, S.aliases, data.aliases);
+    if(Array.isArray(data.sources)){
+      for(const sm of data.sources){
+        if(sm.ranks){ // re-ingest custom/fp ranks by espnId
+          upsertSource({id:sm.id, name:sm.name, weight:sm.weight}, sm.ranks.map(([id,rank])=>({espnId:+id, rank})));
+          const src=S.sources.find(x=>x.id===sm.id); if(src){ src.enabled=sm.enabled; }
+        } else { const src=S.sources.find(x=>x.id===sm.id); if(src){ src.name=sm.name; src.weight=sm.weight; src.enabled=sm.enabled; } }
+      }
+    }
+    if(data.prefs && data.prefs.posFilter) S.ui.posFilter=data.prefs.posFilter;
+    savePrefs(); renderSources(); renderPosFilters(); afterBlendChange(); renderResolver();
+  }
+
+  // ===================================================================
+  // Connect flow
+  // ===================================================================
+  async function doConnect(){
+    readFormIntoState();
+    if(!S.creds.leagueId){ showTest('bad','<div class="big">Missing league</div>Paste a league URL or ID.'); return; }
+    if(!S.creds.isPublic && (!S.creds.swid || !S.creds.espn_s2)){ showTest('bad','<div class="big">Missing credentials</div>Enter SWID and espn_s2, or toggle Public.'); return; }
+    saveCreds();
+    $('testConn').disabled=true;
+    showTest('','<span class="spin"></span> Connecting to ESPN…');
+    try{
+      S.season = await ESPN.currentSeason();
+      const data = await ESPN.connect(S.season, S.creds.leagueId);
+      parseLeague(data);
+      // draft-type gate (C7)
+      if(S.league.draftType!=='SNAKE'){
+        showTest('bad', `<div class="big">${esc(S.league.name)}</div>Draft type is <b>${esc(S.league.draftType)}</b> — snake grid hidden, manual-only mode. Board & blend still work.`);
+      }
+      populateTeamPicker();
+      // keepers on connect (C8)
+      ingestPicks(data, {isKeeperPass:true});
+      clearBanner();
+      showTest('good', `<div class="big">✓ ${esc(S.league.name)}</div>${S.league.size} teams · ${S.league.scoringType} · ${S.league.draftType}${S.league.myTeamId?` · You: ${esc(S.league.teams.find(t=>t.id===S.league.myTeamId).name)}`:' · pick your team below'}`);
+      // load players + ESPN ranks automatically
+      await bootstrapData();
+      afterConnect();
+      // start polling if snake & not complete
+      if(S.league.draftType==='SNAKE' && !(S._draftMeta&&S._draftMeta.complete)) startPoll();
+      goTab('board');
+    }catch(err){
+      if(err.code==='auth') showTest('bad','<div class="big">Authentication failed</div>Re-copy espn_s2 and SWID from espn.com and paste again.');
+      else if(err.code==='shape') showTest('bad','<div class="big">No league data</div>Check the league ID'+(S.creds.isPublic?' — if private, uncheck Public.':'.')+(err.status?' (status '+err.status+')':''));
+      else showTest('bad','<div class="big">Connection error</div>'+esc(err.message||err));
+    }finally{ $('testConn').disabled=false; }
+  }
+  async function bootstrapData(){
+    const sr=$('sourceResult'); sr.className='result show'; sr.innerHTML='<span class="spin"></span> Loading player universe…';
+    try{
+      const pu=await loadPlayers();
+      sr.innerHTML=`<span class="spin"></span> ${pu.count} players loaded${pu.cached?' (cached)':''}. Loading ESPN ranks…`;
+      try{ const kr=await loadEspnRanks(); sr.className='result show good';
+        sr.innerHTML=`<div class="big">Ready</div>${pu.count} players · ESPN Rank ${kr.rank.matched}, ESPN ADP ${kr.adp.matched} matched.`; }
+      catch(e){ // kona failure must not break the app (§6)
+        sr.className='result show'; sr.innerHTML=`<div class="big">${pu.count} players loaded</div>ESPN ranks unavailable (${esc(e.message||e)}). Upload a FantasyPros CSV to build the board.`; }
+    }catch(e){ sr.className='result show bad'; sr.innerHTML='<div class="big">Player load failed</div>'+esc(e.message||e); }
+    savePrefs();
+  }
+  function populateTeamPicker(){
+    const sel=$('teamPicker'); sel.innerHTML='<option value="">Auto-detect</option>';
+    if(!S.league) return;
+    for(const t of S.league.teams){ const o=document.createElement('option'); o.value=String(t.id); o.textContent=t.name+(t.id===S.league.myTeamId?' (you)':''); sel.appendChild(o); }
+    sel.value = S.league.myTeamId!=null ? String(S.league.myTeamId) : '';
+  }
+
+  // ===================================================================
+  // DOM wiring
+  // ===================================================================
+  function showTest(kind,html){ const r=$('testResult'); r.className='result show '+(kind||''); r.innerHTML=html; }
+  function showSourceResult(kind,html){ const r=$('sourceResult'); r.className='result show '+(kind||''); r.innerHTML=html; }
+  function openDrawer(){ $('scrim').classList.add('open'); $('drawer').classList.add('open'); }
+  function closeDrawer(){ $('scrim').classList.remove('open'); $('drawer').classList.remove('open'); }
+  function goTab(name){
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active', p.dataset.tab===name));
+    document.querySelectorAll('#tabBar button').forEach(b=>b.classList.toggle('active', b.dataset.go===name));
+  }
+  function syncFormFromState(){
+    if(S.creds.leagueId) $('leagueUrl').value=S.creds.leagueId;
+    $('publicToggle').checked=!!S.creds.isPublic;
+    $('swid').value=S.creds.swid||''; $('espnS2').value=S.creds.espn_s2||'';
+    $('privateFields').classList.toggle('hidden', $('publicToggle').checked);
+  }
+  function readFormIntoState(){
+    S.creds.leagueId=parseLeagueId($('leagueUrl').value);
+    S.creds.isPublic=$('publicToggle').checked;
+    S.creds.swid=$('swid').value.trim(); S.creds.espn_s2=$('espnS2').value.trim();
+  }
+
+  $('openSettings').onclick=openDrawer;
+  $('closeDrawer').onclick=closeDrawer;
+  $('scrim').onclick=closeDrawer;
+  $('publicToggle').onchange=()=>$('privateFields').classList.toggle('hidden', $('publicToggle').checked);
+  $('saveCreds').onclick=()=>{ readFormIntoState(); saveCreds(); showTest('good','<div class="big">Saved</div>Stored in this browser.'); };
+  $('testConn').onclick=doConnect;
+  $('teamPicker').onchange=()=>{ const v=$('teamPicker').value; if(S.league){ S.league.myTeamId = v?+v:null; afterConnect(); } };
+  document.querySelectorAll('#tabBar button').forEach(b=>b.onclick=()=>goTab(b.dataset.go));
+  $('boardSearch').oninput=(e)=>{ S.ui.search=e.target.value; renderBoard(); };
+  $('hideDrafted').onclick=()=>{ S.ui.hideDrafted=!S.ui.hideDrafted; $('hideDrafted').classList.toggle('on', S.ui.hideDrafted); renderBoard(); };
+  $('loadEspnRanks').onclick=async()=>{ if(!S.league){ showSourceResult('bad','Connect a league first.'); return; }
+    showSourceResult('','<span class="spin"></span> Loading ESPN ranks…');
+    try{ const kr=await loadEspnRanks(); showSourceResult('good',`<div class="big">ESPN loaded</div>Rank ${kr.rank.matched}, ADP ${kr.adp.matched} matched.`); renderSources(); afterBlendChange(); renderResolver(); }
+    catch(e){ showSourceResult('bad','ESPN ranks unavailable: '+esc(e.message||e)); } };
+  $('uploadFpBtn').onclick=()=>$('fpFile').click();
+  $('fpFile').onchange=(e)=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
+    rd.onload=()=>{ if(!S.players.size){ showSourceResult('bad','Load a league/players first.'); return; }
+      const r=ingestFantasyPros(String(rd.result));
+      if(r.error) showSourceResult('bad','CSV problem: '+esc(r.error));
+      else { showSourceResult('good',`<div class="big">FantasyPros loaded</div>${r.matched} matched, ${r.unmatched} unmatched.`); renderSources(); afterBlendChange(); renderResolver(); }
+    }; rd.readAsText(f); e.target.value=''; };
+  $('manualInput').oninput=(e)=>renderManualList(e.target.value);
+  $('manualInput').onblur=()=>setTimeout(()=>$('manualList').classList.remove('show'),150);
+  $('undoPick').onclick=undoLast;
+  $('syncSave').onclick=syncSave;
+  $('syncLoad').onclick=syncLoad;
+
+  // ===================================================================
+  // Boot
+  // ===================================================================
+  function restoreSourceMeta(){
+    if(S._savedSourceMeta) for(const sm of S._savedSourceMeta){ const s=S.sources.find(x=>x.id===sm.id); if(s){ s.name=sm.name; s.weight=sm.weight; s.enabled=sm.enabled; } }
+  }
+  loadCreds(); loadPrefs(); syncFormFromState();
+  const code=localStorage.getItem(LS.sync); if(code) $('syncCode').value=code;
+  // Auto-reconnect if creds present
+  if(S.creds.leagueId && (S.creds.isPublic || (S.creds.swid && S.creds.espn_s2))){
+    doConnect().then(restoreSourceMeta).catch(()=>{});
+  }
 })();
 </script>
 </body>
