@@ -1,0 +1,7 @@
+{
+  "name": "espn-draft-tool",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ESPN redraft draft assistant — single-file app + Vercel serverless proxy."
+}
