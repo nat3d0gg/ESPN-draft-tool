@@ -155,6 +155,24 @@
 
   .empty{padding:26px 14px;text-align:center;color:var(--muted);}
   .empty .big{font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px;}
+
+  /* connect guide */
+  details.guide{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;margin:8px 0 14px;overflow:hidden;}
+  details.guide>summary{cursor:pointer;list-style:none;padding:11px 13px;font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  details.guide>summary::-webkit-details-marker{display:none;}
+  details.guide>summary::after{content:'▸';margin-left:auto;color:var(--muted);transition:transform .15s;}
+  details.guide[open]>summary::after{transform:rotate(90deg);}
+  .guide-body{padding:2px 13px 13px;}
+  .os-tabs{display:flex;gap:6px;margin:4px 0 10px;}
+  .os-tabs button{flex:1;appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--muted);
+    border-radius:9px;padding:8px 6px;font-size:13px;font-weight:800;cursor:pointer;}
+  .os-tabs button.on{color:var(--text);border-color:var(--accent-2);background:color-mix(in srgb,var(--accent-2) 16%,var(--panel));}
+  ol.steps{margin:0;padding-left:20px;} ol.steps li{margin:0 0 8px;font-size:13.5px;line-height:1.5;}
+  ol.steps li b{color:var(--text);}
+  .kbd{display:inline-block;font-family:ui-monospace,Menlo,monospace;font-size:11.5px;font-weight:700;
+    background:var(--panel-3);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 6px;color:var(--text);white-space:nowrap;}
+  .os-pane{display:none;} .os-pane.on{display:block;}
+  .note{font-size:12px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--line);}
   .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px;}
   .kv .k{color:var(--muted);} .kv .v{font-weight:700;text-align:right;}
   .tag{font-size:10px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--panel-3);color:var(--muted);border:1px solid var(--line);}
@@ -283,8 +301,53 @@
     <div class="grip"></div>
     <div class="body">
       <h3>ESPN Login</h3>
-      <p class="hint">Private leagues need two cookies from espn.com: <b>DevTools → Application → Cookies → espn.com</b>.
-        Paste <code class="mono">espn_s2</code> exactly (don't re-encode) and keep the <code class="mono">{ }</code> on <code class="mono">SWID</code>.</p>
+      <p class="hint">Private leagues need two cookies from ESPN: <code class="mono">espn_s2</code> and <code class="mono">SWID</code>.
+        Grab them once from a desktop/laptop browser, then paste below (they work on your phone after that).
+        Public leagues can skip this — just toggle “Public league”.</p>
+
+      <details class="guide" id="connectGuide">
+        <summary>📖 How to get your cookies in Brave — step by step</summary>
+        <div class="guide-body">
+          <div class="os-tabs">
+            <button id="osMac" class="on" type="button">🍎 Mac</button>
+            <button id="osWin" type="button">🪟 Windows PC</button>
+          </div>
+
+          <!-- MAC -->
+          <div class="os-pane on" id="paneMac">
+            <ol class="steps">
+              <li>In <b>Brave</b>, go to <b>espn.com</b> and <b>log in</b> to your fantasy account (do this first — the cookies only exist once you're signed in).</li>
+              <li>Open the <b>same tab's</b> Developer Tools: press <span class="kbd">⌥ Option</span> + <span class="kbd">⌘ Cmd</span> + <span class="kbd">I</span>. <span class="dim">(Or menu <span class="kbd">☰</span> → More Tools → Developer Tools.)</span></li>
+              <li>In the panel that opens, click the <b>Application</b> tab along the top. If you don't see it, click the <span class="kbd">»</span> chevron to reveal hidden tabs.</li>
+              <li>In the left sidebar, expand <b>Storage → Cookies</b>, then click <b>https://www.espn.com</b>.</li>
+              <li>In the list, click the <b>Name</b> column header to sort, then find the two rows named <code class="mono">SWID</code> and <code class="mono">espn_s2</code>.</li>
+              <li>Click <code class="mono">SWID</code>, then double-click its <b>Value</b> and copy it (<span class="kbd">⌘ Cmd</span> + <span class="kbd">C</span>). Keep the <b>{ }</b> braces. Paste it in the SWID field below.</li>
+              <li>Do the same for <code class="mono">espn_s2</code> — copy the whole long value and paste it exactly. <b>Don't</b> retype or “clean it up.”</li>
+              <li>Tap <b>Connect</b>. Done.</li>
+            </ol>
+          </div>
+
+          <!-- WINDOWS -->
+          <div class="os-pane" id="paneWin">
+            <ol class="steps">
+              <li>In <b>Brave</b>, go to <b>espn.com</b> and <b>log in</b> to your fantasy account (do this first — the cookies only exist once you're signed in).</li>
+              <li>Open the <b>same tab's</b> Developer Tools: press <span class="kbd">F12</span>, or <span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">I</span>. <span class="dim">(Or menu <span class="kbd">☰</span> → More Tools → Developer Tools.)</span></li>
+              <li>In the panel that opens, click the <b>Application</b> tab along the top. If you don't see it, click the <span class="kbd">»</span> chevron to reveal hidden tabs.</li>
+              <li>In the left sidebar, expand <b>Storage → Cookies</b>, then click <b>https://www.espn.com</b>.</li>
+              <li>In the list, click the <b>Name</b> column header to sort, then find the two rows named <code class="mono">SWID</code> and <code class="mono">espn_s2</code>.</li>
+              <li>Click <code class="mono">SWID</code>, then double-click its <b>Value</b> and copy it (<span class="kbd">Ctrl</span> + <span class="kbd">C</span>). Keep the <b>{ }</b> braces. Paste it in the SWID field below.</li>
+              <li>Do the same for <code class="mono">espn_s2</code> — copy the whole long value and paste it exactly. <b>Don't</b> retype or “clean it up.”</li>
+              <li>Tap <b>Connect</b>. Done.</li>
+            </ol>
+          </div>
+
+          <div class="note">
+            <b>Tips:</b> The <code class="mono">espn_s2</code> value is very long — make sure you grab all of it.
+            If Connect says “authentication failed,” your cookies probably rotated — just repeat these steps and re-paste.
+            Your <b>League ID</b> is the number in your league's web address: <code class="mono">…leagueId=<b>123456</b></code>.
+          </div>
+        </div>
+      </details>
 
       <label class="field"><span class="lab">League URL or ID</span>
         <input type="text" id="leagueUrl" inputmode="url" autocomplete="off" spellcheck="false"
@@ -1216,6 +1279,20 @@
 
   $('openSettings').onclick=openDrawer;
   $('closeDrawer').onclick=closeDrawer;
+  function setOS(os){
+    const mac=os==='mac';
+    $('osMac').classList.toggle('on', mac); $('osWin').classList.toggle('on', !mac);
+    $('paneMac').classList.toggle('on', mac); $('paneWin').classList.toggle('on', !mac);
+    try{ localStorage.setItem('espnDraftAssist.os', os); }catch{}
+  }
+  $('osMac').onclick=()=>setOS('mac'); $('osWin').onclick=()=>setOS('win');
+  // default the guide to the user's likely platform (saved choice wins)
+  (function defaultOS(){
+    let saved=null; try{ saved=localStorage.getItem('espnDraftAssist.os'); }catch{}
+    if(saved==='mac'||saved==='win'){ setOS(saved); return; }
+    const p=((navigator.platform||'')+' '+(navigator.userAgent||'')).toLowerCase();
+    setOS(p.includes('mac') ? 'mac' : 'win');
+  })();
   $('scrim').onclick=closeDrawer;
   $('publicToggle').onchange=()=>$('privateFields').classList.toggle('hidden', $('publicToggle').checked);
   $('saveCreds').onclick=()=>{ readFormIntoState(); saveCreds(); showTest('good','<div class="big">Saved</div>Stored in this browser.'); };
