@@ -1,0 +1,36 @@
+{
+  "name": "espn-draft-tool",
+  "version": "0.1.0",
+  "description": "ESPN fantasy draft tool with live Redis sync",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test --import tsx test/**/*.test.ts",
+    "example": "tsx examples/live-draft.ts"
+  },
+  "keywords": [
+    "espn",
+    "fantasy",
+    "draft",
+    "redis",
+    "live"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
